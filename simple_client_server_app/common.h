@@ -3,3 +3,6 @@
 void *get_in_addr();
 
 struct addrinfo *Get_address_info();
+
+void Send();
+void Receive();

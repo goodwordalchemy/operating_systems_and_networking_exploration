@@ -47,10 +47,11 @@ int Create_connected_socket(struct addrinfo *servinfo)
     return sockfd;
 
 }
+
 // get sockaddr, IPv4 or IPv6:
 int main(int argc, char *argv[])
 {
-    int sockfd, numbytes;  
+    int sockfd;  
     char buf[MAXDATASIZE];
     struct addrinfo *servinfo;
 
@@ -65,12 +66,7 @@ int main(int argc, char *argv[])
 
     freeaddrinfo(servinfo); // all done with this structure
 
-    if ((numbytes = recv(sockfd, buf, MAXDATASIZE-1, 0)) == -1) {
-        perror("recv");
-        exit(1);
-    }
-
-    buf[numbytes] = '\0';
+    Receive(sockfd, buf, MAXDATASIZE);
 
     printf("client: received '%s'\n",buf);
 

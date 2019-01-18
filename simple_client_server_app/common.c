@@ -31,3 +31,21 @@ struct addrinfo *Get_address_info(char* hostname, char* port)
     }
     return servinfo;
 }
+
+void Send(int sockfd, char *msg, int msg_length)
+{
+    if (send(sockfd, msg, msg_length, 0) == -1)
+        perror("send");
+}
+
+void Receive(int sockfd, char *buf, int buf_len)
+{
+    int numbytes;
+    if ((numbytes = recv(sockfd, buf, buf_len-1, 0)) == -1) {
+        perror("recv");
+        exit(1);
+    }
+
+    buf[numbytes] = '\0';
+}
+
