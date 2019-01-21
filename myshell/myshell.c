@@ -138,6 +138,8 @@ int main(int argc, char *argv[]) {
     while (1) {
         show_prompt(&history_number);
         read_input(input_buffer);
+        if (!*input_buffer)
+            continue;
         parse_input(input_buffer, cmd);
         rc = execute_command(cmd, background_procs);
         if (rc == 1)
