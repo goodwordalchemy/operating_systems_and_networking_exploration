@@ -175,14 +175,22 @@ int handle_pipe(cmd_t *cmd){
     return 0;
 }
 
-void handle_redirect(int old_fd, char *filename){
+void handle_redirect(int old_fd, char *filename, int read_or_write){
     if (close(old_fd) == -1){
         perror("close");
         exit(EXIT_FAILURE);
     }
-    if (open(filename, O_CREAT | O_TRUNC | O_WRONLY, S_IRWXU) == -1){
-        perror("open");
-        exit(EXIT_FAILURE);
+    if (read_or_write){
+        if (open(filename, O_CREAT | O_TRUNC | O_WRONLY, S_IRWXU) == -1){
+            perror("open");
+            exit(EXIT_FAILURE);
+        }
+    }
+    else {
+        if (open(filename, O_RDONLY, S_IRWXU) == -1){
+            perror("open");
+            exit(EXIT_FAILURE);
+        }
     }
 }
 
@@ -235,9 +243,9 @@ int execute_command(cmd_t *cmd, pid_t *background_procs){
             exit(rc);
         }
         if (cmd->redir_input)
-            handle_redirect(STDIN_FILENO, cmd->input);
+            handle_redirect(STDIN_FILENO, cmd->input, 0);
         if (cmd->redir_output)
-            handle_redirect(STDOUT_FILENO, cmd->output);
+            handle_redirect(STDOUT_FILENO, cmd->output, 1);
         if (execvp(cmd->left[0], cmd->left) == -1)
             print_user_error();
             exit(1);
@@ -321,4 +329,3 @@ int main(int argc, char *argv[]) {
     }
     free_cmd_t(&cmd);
 }
-
