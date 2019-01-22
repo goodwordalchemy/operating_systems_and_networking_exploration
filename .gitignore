@@ -1,3 +1,4 @@
 **/*.dSYM
 **/*.out
 **/*.sw*
+**/.DS_Store
