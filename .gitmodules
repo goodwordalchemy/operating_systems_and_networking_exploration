@@ -1,3 +1,6 @@
 [submodule "xv6-hacking/xv6-hacking"]
 	path = xv6-hacking/xv6-hacking
 	url = https://github.com/goodwordalchemy/xv6-hacking.git
+[submodule "xv6-hacking/-h"]
+	path = xv6-hacking/-h
+	url = https://github.com/goodwordalchemy/xv6-hacking.git
