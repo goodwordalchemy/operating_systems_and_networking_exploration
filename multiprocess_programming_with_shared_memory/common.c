@@ -3,9 +3,11 @@
 
 #include "common.h"
 
-
 void print_client_str(int iter, stats_t *client){
-    printf("iter: %d, pid: %d\n", iter, client->pid);
+    printf("iteration: %d, pid : %d, ", iter, client->pid);
+    printf("birth : %s, ", client->birth);
+    printf("elapsed : %d s %0.4f ms, ", client->elapsed_sec, client->elapsed_msec);
+    printf("%s\n", client->clientString);
 }
 
 void read_shmem(int iter, void *shmem){
@@ -22,4 +24,3 @@ void read_shmem(int iter, void *shmem){
     if (num_clients == 0)
         printf("iter: %d, There are no clients yet.\n", iter);
 }
-
