@@ -25,3 +25,13 @@ void wrapped_pthread_mutex_unlock(pthread_mutex_t *m){
     int rc = pthread_mutex_unlock(m);
     assert(rc == 0);
 }
+
+void wrapped_pthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex){
+    int rc = pthread_cond_wait(cond, mutex);
+    assert(rc == 0);
+}
+
+void wrapped_pthread_cond_signal(pthread_cond_t *cond){
+    int rc = pthread_cond_signal(cond);
+    assert(rc == 0);
+}
