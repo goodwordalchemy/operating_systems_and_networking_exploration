@@ -20,7 +20,9 @@ struct addrinfo *get_address_info(char* hostname, char* port)
     int rv;
     struct addrinfo hints;
     struct addrinfo *servinfo = NULL;
+
     memset(&hints, 0, sizeof hints);
+
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE; // use my IP
@@ -32,7 +34,7 @@ struct addrinfo *get_address_info(char* hostname, char* port)
     return servinfo;
 }
 
-void Send(int sockfd, char *msg, int msg_length)
+void send_on_socket(int sockfd, char *msg, int msg_length)
 {
     if (send(sockfd, msg, msg_length, 0) < 1) {
         perror("send");
@@ -40,7 +42,7 @@ void Send(int sockfd, char *msg, int msg_length)
     }
 }
 
-void Receive(int sockfd, char *buf, int buf_len)
+void receive_on_socket(int sockfd, char *buf, int buf_len)
 {
     int numbytes;
     if ((numbytes = recv(sockfd, buf, buf_len-1, 0)) == 0) {

@@ -51,14 +51,14 @@ void interact_with_server(int sockfd)
 {
     char kb_input[KB_BUFFER_SIZE];
     char buf[MAXDATASIZE];
-    Receive(sockfd, buf, MAXDATASIZE);
+    receive_on_socket(sockfd, buf, MAXDATASIZE);
     printf("client: received %s\n",buf);
     while(1){
-        Receive(sockfd, buf, MAXDATASIZE);
+        receive_on_socket(sockfd, buf, MAXDATASIZE);
         printf("client: received %s\n",buf);
         printf("Press enter when you want to increment the counter\n");
         if (fgets(kb_input, sizeof(kb_input), stdin)){
-            Send(sockfd, kb_input, KB_BUFFER_SIZE);
+            send_on_socket(sockfd, kb_input, KB_BUFFER_SIZE);
         }
     }
 

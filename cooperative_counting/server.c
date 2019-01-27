@@ -29,7 +29,7 @@ typedef struct __arg_t {
     int sockfd;
 } arg_t;
 
-void sigchld_handler(int s)
+void sigchild_handler(int s)
 {
     // waitpid() might overwrite errno, so we save and restore it:
     int saved_errno = errno;
@@ -39,7 +39,7 @@ void sigchld_handler(int s)
     errno = saved_errno;
 }
 
-int Create_bound_socket(struct addrinfo *servinfo)
+int create_bound_socket(struct addrinfo *servinfo)
 {
     int sockfd;
     struct addrinfo *p;
@@ -75,7 +75,7 @@ int Create_bound_socket(struct addrinfo *servinfo)
     return sockfd;
 }
 
-void Listen(int sockfd, int backlog)
+void listen_on_socket(int sockfd, int backlog)
 {
     if (listen(sockfd, BACKLOG) == -1) {
         perror("listen");
@@ -83,10 +83,10 @@ void Listen(int sockfd, int backlog)
     }
 }
 
-void Reap_dead_processes(){
+void reap_dead_processes(){
     struct sigaction sa;
 
-    sa.sa_handler = sigchld_handler; // reap all dead processes
+    sa.sa_handler = sigchild_handler; // reap all dead processes
     sigemptyset(&sa.sa_mask);
     sa.sa_flags = SA_RESTART;
     if (sigaction(SIGCHLD, &sa, NULL) == -1) {
@@ -95,7 +95,7 @@ void Reap_dead_processes(){
     }
 }
 
-int Accept_connection(int sockfd)
+int accept_connection_on_socket(int sockfd)
 {
     int new_fd;
     socklen_t sin_size;
@@ -128,15 +128,15 @@ void *Interact_with_client(void *arg)
 
     sprintf(welcome_message, "Hello, thread %d!", thread_num);
 
-    Send(sockfd, welcome_message, WELCOME_MESSAGE_LENGTH);
+    send_on_socket(sockfd, welcome_message, WELCOME_MESSAGE_LENGTH);
     while(1){
-        Receive(sockfd, buf, MAXDATASIZE);
-        printf("Received Message from thread %d: %s\n", thread_num, buf);
-        Pthread_mutex_lock(&count_lock);
+        receive_on_socket(sockfd, buf, MAXDATASIZE);
+        printf("receive_on_socketd Message from thread %d: %s\n", thread_num, buf);
+        wrapped_pthread_mutex_lock(&count_lock);
         count++;
-        Pthread_mutex_unlock(&count_lock);
+        wrapped_pthread_mutex_unlock(&count_lock);
         sprintf(count_message_buffer, "Current count: %d\n", count);
-        Send(sockfd, count_message_buffer, COUNT_MESSAGE_BUFFER_SIZE);
+        send_on_socket(sockfd, count_message_buffer, COUNT_MESSAGE_BUFFER_SIZE);
         printf("%s", count_message_buffer);
     }
     return NULL;
@@ -151,20 +151,21 @@ int main(void)
 
     // Setup socket for listening.
     servinfo = get_address_info(NULL, PORT);
-    sockfd = Create_bound_socket(servinfo);
+    sockfd = create_bound_socket(servinfo);
+
     freeaddrinfo(servinfo); // all done with this structure
-    Listen(sockfd, BACKLOG);
-    Reap_dead_processes();
+    listen_on_socket(sockfd, BACKLOG);
+    reap_dead_processes();
 
     printf("server: waiting for connections...\n");
 
     for (i = 0; i < THREAD_COUNT; i++){
-        new_fd = Accept_connection(sockfd);
+        new_fd = accept_connection_on_socket(sockfd);
         if (new_fd == -1)
             continue;
         args[i].thread_num = i;
         args[i].sockfd = new_fd;
-        Pthread_create(&threads[i], NULL, Interact_with_client, (void*)&args[i]); 
+        wrapped_pthread_create(&threads[i], NULL, Interact_with_client, (void*)&args[i]); 
     }
 
     return 0;

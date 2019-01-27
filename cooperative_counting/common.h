@@ -5,5 +5,6 @@ void *get_internet_address();
 
 struct addrinfo *get_address_info();
 
-void Send();
-void Receive();
+void send_on_socket();
+
+void receive_on_socket();
