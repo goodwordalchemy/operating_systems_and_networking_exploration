@@ -1,14 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <errno.h>
-#include <string.h>
 #include <netdb.h>
-#include <sys/types.h>
-#include <netinet/in.h>
-#include <sys/socket.h>
+#include <unistd.h>
 
-#include <arpa/inet.h>
 #include "gwa_sockets.h"
 
 #define KB_BUFFER_SIZE 64
@@ -27,6 +21,10 @@ void interact_with_server(int sockfd)
             send_on_socket(sockfd, kb_input, KB_BUFFER_SIZE);
         }
     }
+
+}
+
+static void handle_termination(sig){
 
 }
 
