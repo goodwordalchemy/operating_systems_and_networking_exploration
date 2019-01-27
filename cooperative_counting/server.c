@@ -49,12 +49,16 @@ void interact_with_client(int sockfd, int thread_num){
     send_on_socket(sockfd, welcome_message, WELCOME_MESSAGE_LENGTH);
 
     while(1){
-        if (!peer_is_connected(sockfd)){
+        /* if (!peer_is_connected(sockfd)){ */
+        /*     printf("thread %d: peer must have disconnected\n", thread_num); */
+        /*     break; */
+        /* } */
+
+        n_bytes = receive_on_socket(sockfd, buf, MAXDATASIZE);
+        if (n_bytes == 0){
             printf("thread %d: peer must have disconnected\n", thread_num);
             break;
         }
-
-        receive_on_socket(sockfd, buf, MAXDATASIZE);
 
         printf("received message from thread %d: %s\n", thread_num, buf);
         
