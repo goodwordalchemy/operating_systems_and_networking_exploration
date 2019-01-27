@@ -11,6 +11,23 @@
 
 #include "gwa_sockets.h"
 
+int peer_is_connected(int sockfd){
+    int rc;
+    struct sockaddr sa;
+    socklen_t addrlen;
+
+    rc = getpeername(sockfd, &sa, &addrlen);
+    if (rc == 0)
+        return 1;
+    else if (errno == ENOTCONN)
+        return 0;
+    else {
+        perror("getpeername");
+        exit(1);
+        return 0;
+    }
+}
+
 void *get_internet_address(struct sockaddr *sa)
 {
     if (sa->sa_family == AF_INET) {
@@ -138,18 +155,20 @@ int create_connected_socket(struct addrinfo *servinfo)
     return sockfd;
 }
 
-void send_on_socket(int sockfd, char *msg, int msg_length)
+int send_on_socket(int sockfd, char *msg, int msg_length)
 {
-    if (send(sockfd, msg, msg_length, 0) < 1) {
+    int numbytes;
+    if ((numbytes = send(sockfd, msg, msg_length, 0)) == -1) {
         perror("send");
         exit(1);
     }
+    return numbytes;
 }
 
 int receive_on_socket(int sockfd, char *buf, int buf_len)
 {
-    int numbytes = 1;
-    if ((numbytes = recv(sockfd, buf, buf_len-1, 0)) == 0) {
+    int numbytes;
+    if ((numbytes = recv(sockfd, buf, buf_len-1, 0)) == -1) {
         perror("recv");
         exit(1);
     }

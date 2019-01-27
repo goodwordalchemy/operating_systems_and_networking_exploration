@@ -26,11 +26,6 @@ pthread_mutex_t connection_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t empty = PTHREAD_COND_INITIALIZER;
 pthread_cond_t fill = PTHREAD_COND_INITIALIZER;
 
-typedef struct __arg_t {
-    int thread_num;
-    int sockfd;
-} arg_t;
-
 void put_connection(int fd){
     waiting_connections[fill_ptr] = fd;
     fill_ptr = (fill_ptr + 1) % NUM_WAITING_CONNECTIONS;
@@ -54,11 +49,12 @@ void interact_with_client(int sockfd, int thread_num){
     send_on_socket(sockfd, welcome_message, WELCOME_MESSAGE_LENGTH);
 
     while(1){
-        n_bytes = receive_on_socket(sockfd, buf, MAXDATASIZE);
-        /* if (n_bytes == 0) */
-        /*     printf("thread %d must have disconnected\n", thread_num); */
-        /*     close(sockfd); */
-        /*     break; */
+        if (!peer_is_connected(sockfd)){
+            printf("thread %d: peer must have disconnected\n", thread_num);
+            break;
+        }
+
+        receive_on_socket(sockfd, buf, MAXDATASIZE);
 
         printf("received message from thread %d: %s\n", thread_num, buf);
         
@@ -67,7 +63,7 @@ void interact_with_client(int sockfd, int thread_num){
         wrapped_pthread_mutex_unlock(&count_lock);
 
         sprintf(count_message_buffer, "Current count: %d\n", count);
-        send_on_socket(sockfd, count_message_buffer, COUNT_MESSAGE_BUFFER_SIZE);
+        n_bytes = send_on_socket(sockfd, count_message_buffer, COUNT_MESSAGE_BUFFER_SIZE);
         printf("%s", count_message_buffer);
     }
 }
