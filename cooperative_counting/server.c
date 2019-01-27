@@ -1,9 +1,6 @@
-#include <arpa/inet.h>
-#include <errno.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <pthread.h>
-#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12,10 +9,9 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-#include "common.h"
-#include "threads.h"
+#include "gwa_sockets.h"
+#include "gwa_threads.h"
 
-#define BACKLOG 10     // how many pending connections queue will hold
 #define THREAD_COUNT 10
 #define WELCOME_MESSAGE_LENGTH 100
 #define COUNT_MESSAGE_BUFFER_SIZE 30
@@ -29,15 +25,6 @@ typedef struct __arg_t {
     int sockfd;
 } arg_t;
 
-void sigchild_handler(int s)
-{
-    // waitpid() might overwrite errno, so we save and restore it:
-    int saved_errno = errno;
-
-    while(waitpid(-1, NULL, WNOHANG) > 0);
-
-    errno = saved_errno;
-}
 
 int create_bound_socket(struct addrinfo *servinfo)
 {
@@ -75,47 +62,9 @@ int create_bound_socket(struct addrinfo *servinfo)
     return sockfd;
 }
 
-void listen_on_socket(int sockfd, int backlog)
-{
-    if (listen(sockfd, BACKLOG) == -1) {
-        perror("listen");
-        exit(1);
-    }
-}
 
-void reap_dead_processes(){
-    struct sigaction sa;
 
-    sa.sa_handler = sigchild_handler; // reap all dead processes
-    sigemptyset(&sa.sa_mask);
-    sa.sa_flags = SA_RESTART;
-    if (sigaction(SIGCHLD, &sa, NULL) == -1) {
-        perror("sigaction");
-        exit(1);
-    }
-}
-
-int accept_connection_on_socket(int sockfd)
-{
-    int new_fd;
-    socklen_t sin_size;
-    struct sockaddr_storage their_addr;
-    char s[INET6_ADDRSTRLEN];
-    sin_size = sizeof their_addr;
-    new_fd = accept(sockfd, (struct sockaddr *)&their_addr, &sin_size);
-    if (new_fd == -1) {
-        perror("accept");
-        return -1;
-    }
-
-    inet_ntop(their_addr.ss_family,
-        get_internet_address((struct sockaddr *)&their_addr),
-        s, sizeof s);
-    printf("server: got connection from %s\n", s);
-    return new_fd;
-}
-
-void *Interact_with_client(void *arg)
+void *interact_with_client(void *arg)
 {
     arg_t *t_arg = (arg_t *) arg;
     char welcome_message[WELCOME_MESSAGE_LENGTH];
@@ -131,7 +80,7 @@ void *Interact_with_client(void *arg)
     send_on_socket(sockfd, welcome_message, WELCOME_MESSAGE_LENGTH);
     while(1){
         receive_on_socket(sockfd, buf, MAXDATASIZE);
-        printf("receive_on_socketd Message from thread %d: %s\n", thread_num, buf);
+        printf("received essage from thread %d: %s\n", thread_num, buf);
         wrapped_pthread_mutex_lock(&count_lock);
         count++;
         wrapped_pthread_mutex_unlock(&count_lock);
@@ -165,7 +114,7 @@ int main(void)
             continue;
         args[i].thread_num = i;
         args[i].sockfd = new_fd;
-        wrapped_pthread_create(&threads[i], NULL, Interact_with_client, (void*)&args[i]); 
+        wrapped_pthread_create(&threads[i], NULL, interact_with_client, (void*)&args[i]); 
     }
 
     return 0;

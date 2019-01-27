@@ -9,7 +9,7 @@
 #include <sys/socket.h>
 
 #include <arpa/inet.h>
-#include "common.h"
+#include "gwa_sockets.h"
 
 #define KB_BUFFER_SIZE 64
 
