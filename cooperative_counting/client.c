@@ -9,12 +9,20 @@
 
 void interact_with_server(int sockfd)
 {
+    int n_bytes;
     char kb_input[KB_BUFFER_SIZE];
     char buf[MAXDATASIZE];
+
     receive_on_socket(sockfd, buf, MAXDATASIZE);
+
     printf("client: received %s\n",buf);
+
     while(1){
-        receive_on_socket(sockfd, buf, MAXDATASIZE);
+        n_bytes = receive_on_socket(sockfd, buf, MAXDATASIZE);
+        if (n_bytes == 0){
+            printf("peer must have disconnected\n");
+            exit(0);
+        }
         printf("client: received %s\n",buf);
         printf("Press enter when you want to increment the counter\n");
         if (fgets(kb_input, sizeof(kb_input), stdin)){

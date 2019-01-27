@@ -2,8 +2,6 @@
 #define MAXDATASIZE 100 // max number of bytes we can get at once 
 #define BACKLOG 10     // how many pending connections queue will hold
 
-int peer_is_connected();
-
 void *get_internet_address();
 
 struct addrinfo *get_address_info();

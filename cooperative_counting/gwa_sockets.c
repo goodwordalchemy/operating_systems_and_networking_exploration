@@ -11,27 +11,6 @@
 
 #include "gwa_sockets.h"
 
-/* int peer_is_connected(int sockfd){ */
-/*     int rc, errnum; */
-/*     struct sockaddr sa; */
-/*     socklen_t addrlen; */
-
-/*     printf("about to getpeername\n"); */
-/*     rc = getpeername(sockfd, &sa, &addrlen); */
-/*     errnum = errno; */
-/*     printf("just got getpeername: rc=%d\n", rc); */
-/*     if (rc == 0) */
-/*         return 1; */
-/*     else if (errnum == ENOTCONN) */
-/*         return 0; */
-/*     else { */
-/*         printf("FUCK FUCK FUYCK FUCK"); */
-/*         perror("getpeername"); */
-/*         /1* exit(1); *1/ */
-/*         return 0; */
-/*     } */
-/* } */
-
 void *get_internet_address(struct sockaddr *sa)
 {
     if (sa->sa_family == AF_INET) {
