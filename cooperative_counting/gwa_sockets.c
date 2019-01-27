@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <unistd.h>
 
 #include "gwa_sockets.h"
 
@@ -38,12 +39,40 @@ struct addrinfo *get_address_info(char* hostname, char* port)
     return servinfo;
 }
 
-void listen_on_socket(int sockfd, int backlog)
+int create_bound_socket(struct addrinfo *servinfo)
 {
-    if (listen(sockfd, BACKLOG) == -1) {
-        perror("listen");
+    int sockfd;
+    struct addrinfo *p;
+    int yes=1;
+    // loop through all the results and bind to the first we can
+    for(p = servinfo; p != NULL; p = p->ai_next) {
+        printf("socket ai_family: %d\n", p->ai_family);
+        if ((sockfd = socket(p->ai_family, p->ai_socktype,
+                p->ai_protocol)) == -1) {
+            perror("server: socket");
+            continue;
+        }
+
+        if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes,
+                sizeof(int)) == -1) {
+            perror("setsockopt");
+            exit(1);
+        }
+
+        if (bind(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
+            close(sockfd);
+            perror("server: bind");
+            continue;
+        }
+
+        break;
+    }
+
+    if (p == NULL)  {
+        fprintf(stderr, "server: failed to bind\n");
         exit(1);
     }
+    return sockfd;
 }
 
 int accept_connection_on_socket(int sockfd)
@@ -64,6 +93,49 @@ int accept_connection_on_socket(int sockfd)
         s, sizeof s);
     printf("server: got connection from %s\n", s);
     return new_fd;
+}
+
+void listen_on_socket(int sockfd, int backlog)
+{
+    if (listen(sockfd, BACKLOG) == -1) {
+        perror("listen");
+        exit(1);
+    }
+}
+
+
+int create_connected_socket(struct addrinfo *servinfo)
+{
+    struct addrinfo *p;
+    int sockfd;
+    char s[INET6_ADDRSTRLEN];
+    // loop through all the results and connect to the first we can
+    for(p = servinfo; p != NULL; p = p->ai_next) {
+        if ((sockfd = socket(p->ai_family, p->ai_socktype,
+                p->ai_protocol)) == -1) {
+            perror("client: socket");
+            continue;
+        }
+
+        if (connect(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
+            close(sockfd);
+            perror("client: connect");
+            continue;
+        }
+
+        break;
+    }
+
+    if (p == NULL) {
+        fprintf(stderr, "client: failed to connect\n");
+        exit(2);
+    }
+
+    inet_ntop(p->ai_family, get_internet_address((struct sockaddr *)p->ai_addr),
+            s, sizeof s);
+
+    printf("client: connecting to %s\n", s);
+    return sockfd;
 }
 
 void send_on_socket(int sockfd, char *msg, int msg_length)

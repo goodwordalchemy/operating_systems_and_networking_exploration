@@ -26,43 +26,6 @@ typedef struct __arg_t {
 } arg_t;
 
 
-int create_bound_socket(struct addrinfo *servinfo)
-{
-    int sockfd;
-    struct addrinfo *p;
-    int yes=1;
-    // loop through all the results and bind to the first we can
-    for(p = servinfo; p != NULL; p = p->ai_next) {
-        printf("socket ai_family: %d\n", p->ai_family);
-        if ((sockfd = socket(p->ai_family, p->ai_socktype,
-                p->ai_protocol)) == -1) {
-            perror("server: socket");
-            continue;
-        }
-
-        if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes,
-                sizeof(int)) == -1) {
-            perror("setsockopt");
-            exit(1);
-        }
-
-        if (bind(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
-            close(sockfd);
-            perror("server: bind");
-            continue;
-        }
-
-        break;
-    }
-
-    if (p == NULL)  {
-        fprintf(stderr, "server: failed to bind\n");
-        exit(1);
-    }
-    return sockfd;
-}
-
-
 
 void *interact_with_client(void *arg)
 {

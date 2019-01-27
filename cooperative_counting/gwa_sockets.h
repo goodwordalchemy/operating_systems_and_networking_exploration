@@ -6,9 +6,13 @@ void *get_internet_address();
 
 struct addrinfo *get_address_info();
 
+int create_bound_socket();
+
 void listen_on_socket();
 
 int accept_connection_on_socket();
+
+int create_connected_socket();
 
 void send_on_socket();
 

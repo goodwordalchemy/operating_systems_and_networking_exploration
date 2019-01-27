@@ -13,40 +13,6 @@
 
 #define KB_BUFFER_SIZE 64
 
-int create_connected_socket(struct addrinfo *servinfo)
-{
-    struct addrinfo *p;
-    int sockfd;
-    char s[INET6_ADDRSTRLEN];
-    // loop through all the results and connect to the first we can
-    for(p = servinfo; p != NULL; p = p->ai_next) {
-        if ((sockfd = socket(p->ai_family, p->ai_socktype,
-                p->ai_protocol)) == -1) {
-            perror("client: socket");
-            continue;
-        }
-
-        if (connect(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
-            close(sockfd);
-            perror("client: connect");
-            continue;
-        }
-
-        break;
-    }
-
-    if (p == NULL) {
-        fprintf(stderr, "client: failed to connect\n");
-        exit(2);
-    }
-
-    inet_ntop(p->ai_family, get_internet_address((struct sockaddr *)p->ai_addr),
-            s, sizeof s);
-
-    printf("client: connecting to %s\n", s);
-    return sockfd;
-}
-
 void interact_with_server(int sockfd)
 {
     char kb_input[KB_BUFFER_SIZE];
