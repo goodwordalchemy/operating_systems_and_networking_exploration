@@ -24,10 +24,6 @@ void interact_with_server(int sockfd)
 
 }
 
-static void handle_termination(sig){
-
-}
-
 // get sockaddr, IPv4 or IPv6:
 int main(int argc, char *argv[])
 {

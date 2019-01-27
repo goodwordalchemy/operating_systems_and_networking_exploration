@@ -1,6 +1,8 @@
 #include <netdb.h>
 #include <pthread.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 #include "gwa_sockets.h"
 #include "gwa_threads.h"
@@ -9,7 +11,7 @@
 #define COUNT_MESSAGE_BUFFER_SIZE 30
 
 #define NUM_WAITING_CONNECTIONS 10
-#define THREAD_COUNT 10
+#define THREAD_COUNT 2
 
 
 int count = 0; // This is the number that the clients modify in their connections
@@ -21,7 +23,8 @@ int use_ptr = 0;
 
 pthread_mutex_t count_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t connection_lock = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t empty, fill;
+pthread_cond_t empty = PTHREAD_COND_INITIALIZER;
+pthread_cond_t fill = PTHREAD_COND_INITIALIZER;
 
 typedef struct __arg_t {
     int thread_num;
@@ -69,17 +72,25 @@ void *connection_worker(void *arg)
     int sockfd, thread_num;
 
     thread_num = *(int*)arg;
+    free(arg);
 
     while(1){
+        printf("thread_num: %d.  About to acquire the connection lock\n", thread_num);
         wrapped_pthread_mutex_lock(&connection_lock);
+        printf("thread_num: %d.  About to wait for connections\n", thread_num);
         while (n_waiting_connections == 0)
             wrapped_pthread_cond_wait(&fill, &connection_lock);
 
+        printf("thread_num: %d.  About to get connection\n", thread_num);
         sockfd = get_connection();
-        interact_with_client(sockfd, thread_num);
-
+        printf("thread_num: %d, sockfd: %d\n", thread_num, sockfd);
         wrapped_pthread_cond_signal(&empty);
         wrapped_pthread_mutex_unlock(&connection_lock);
+
+        interact_with_client(sockfd, thread_num);
+
+        printf("thread_num: %d freed!\n", thread_num);
+
     }
     return NULL;
 }
@@ -101,18 +112,30 @@ int main(void)
 
     printf("server: waiting for connections...\n");
 
-    for (i = 0; i < THREAD_COUNT; i++)
-        wrapped_pthread_create(&threads[i], NULL, connection_worker, (void*)&i); 
+    for (i = 0; i < THREAD_COUNT; i++){
+        int *arg;
+        if ((arg = malloc(sizeof(*arg))) == NULL){
+            perror("malloc");
+            exit(EXIT_FAILURE);
+        }
+        *arg = i;
+        wrapped_pthread_create(&threads[i], NULL, connection_worker, (void*)arg); 
+    }
 
     while (1){
-        wrapped_pthread_mutex_lock(&connection_lock);
-        while (n_waiting_connections == NUM_WAITING_CONNECTIONS)
-            wrapped_pthread_cond_wait(&empty, &connection_lock);
-
+        printf("Papa thread about to accept connection\n");
         new_fd = accept_connection_on_socket(sockfd);
         if (new_fd == -1)
             continue;
 
+        printf("Papa thread just accepted new connection.\n");
+        wrapped_pthread_mutex_lock(&connection_lock);
+
+        printf("Papa thread just acquired conection lock\n");
+        while (n_waiting_connections == NUM_WAITING_CONNECTIONS)
+            wrapped_pthread_cond_wait(&empty, &connection_lock);
+
+        printf("Papa thread about to put connection\n");
         put_connection(new_fd);
 
         wrapped_pthread_cond_signal(&fill);
