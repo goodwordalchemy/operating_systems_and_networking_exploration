@@ -1,0 +1,5 @@
+## The Counting Game
+
+There is this great icebreaker/team-building type game that goes as follows: One person in the group says "1."  Then someone else says "2".  Then, you keep counting as a team, trying to count as high as possible while including as many members as possible.  Here's the catch, though, if two people say a number at the same time, you have to start again from 1.
+
+I am implementing that game with a client server architecture.  I figure doing so will allow to learn a lot about socket programming and threads.
