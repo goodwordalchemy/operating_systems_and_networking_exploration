@@ -45,6 +45,7 @@ int get_connection(){
 }
 
 void interact_with_client(int sockfd, int thread_num){
+    int n_bytes;
     char welcome_message[WELCOME_MESSAGE_LENGTH];
     char count_message_buffer[COUNT_MESSAGE_BUFFER_SIZE];
     char buf[MAXDATASIZE];
@@ -53,8 +54,13 @@ void interact_with_client(int sockfd, int thread_num){
     send_on_socket(sockfd, welcome_message, WELCOME_MESSAGE_LENGTH);
 
     while(1){
-        receive_on_socket(sockfd, buf, MAXDATASIZE);
-        printf("received essage from thread %d: %s\n", thread_num, buf);
+        n_bytes = receive_on_socket(sockfd, buf, MAXDATASIZE);
+        /* if (n_bytes == 0) */
+        /*     printf("thread %d must have disconnected\n", thread_num); */
+        /*     close(sockfd); */
+        /*     break; */
+
+        printf("received message from thread %d: %s\n", thread_num, buf);
         
         wrapped_pthread_mutex_lock(&count_lock);
         count++;

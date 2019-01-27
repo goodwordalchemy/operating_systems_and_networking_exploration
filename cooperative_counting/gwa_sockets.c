@@ -146,15 +146,17 @@ void send_on_socket(int sockfd, char *msg, int msg_length)
     }
 }
 
-void receive_on_socket(int sockfd, char *buf, int buf_len)
+int receive_on_socket(int sockfd, char *buf, int buf_len)
 {
-    int numbytes;
+    int numbytes = 1;
     if ((numbytes = recv(sockfd, buf, buf_len-1, 0)) == 0) {
         perror("recv");
         exit(1);
     }
 
     buf[numbytes] = '\0';
+
+    return numbytes;
 }
 
 void sigchild_handler(int s)

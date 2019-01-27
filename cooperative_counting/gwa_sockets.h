@@ -16,6 +16,6 @@ int create_connected_socket();
 
 void send_on_socket();
 
-void receive_on_socket();
+int receive_on_socket();
 
 void reap_dead_processes();
