@@ -13,7 +13,7 @@
 
 #define KB_BUFFER_SIZE 64
 
-int Create_connected_socket(struct addrinfo *servinfo)
+int create_connected_socket(struct addrinfo *servinfo)
 {
     struct addrinfo *p;
     int sockfd;
@@ -40,14 +40,14 @@ int Create_connected_socket(struct addrinfo *servinfo)
         exit(2);
     }
 
-    inet_ntop(p->ai_family, get_in_addr((struct sockaddr *)p->ai_addr),
+    inet_ntop(p->ai_family, get_internet_address((struct sockaddr *)p->ai_addr),
             s, sizeof s);
 
     printf("client: connecting to %s\n", s);
     return sockfd;
 }
 
-void Interact_with_server(int sockfd)
+void interact_with_server(int sockfd)
 {
     char kb_input[KB_BUFFER_SIZE];
     char buf[MAXDATASIZE];
@@ -68,6 +68,7 @@ void Interact_with_server(int sockfd)
 int main(int argc, char *argv[])
 {
     int sockfd;  
+    char *client_hostname;
     struct addrinfo *servinfo;
 
     if (argc != 2) {
@@ -75,13 +76,15 @@ int main(int argc, char *argv[])
         exit(1);
     }
 
-    servinfo = Get_address_info(argv[1], PORT);
+    client_hostname = argv[1];
 
-    sockfd = Create_connected_socket(servinfo);
+    servinfo = get_address_info(client_hostname, PORT);
+
+    sockfd = create_connected_socket(servinfo);
 
     freeaddrinfo(servinfo); // all done with this structure
 
-    Interact_with_server(sockfd);
+    interact_with_server(sockfd);
 
     close(sockfd);
 

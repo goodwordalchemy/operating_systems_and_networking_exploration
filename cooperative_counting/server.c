@@ -109,7 +109,7 @@ int Accept_connection(int sockfd)
     }
 
     inet_ntop(their_addr.ss_family,
-        get_in_addr((struct sockaddr *)&their_addr),
+        get_internet_address((struct sockaddr *)&their_addr),
         s, sizeof s);
     printf("server: got connection from %s\n", s);
     return new_fd;
@@ -150,7 +150,7 @@ int main(void)
     arg_t args[THREAD_COUNT];
 
     // Setup socket for listening.
-    servinfo = Get_address_info(NULL, PORT);
+    servinfo = get_address_info(NULL, PORT);
     sockfd = Create_bound_socket(servinfo);
     freeaddrinfo(servinfo); // all done with this structure
     Listen(sockfd, BACKLOG);
