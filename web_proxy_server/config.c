@@ -53,8 +53,6 @@ void free_config(config_t *config){
 void add_blocked_site(config_t *config, char *blocked_site){
     site_list_node *new_node;
 
-    printf("adding blocked site %s\n", blocked_site);
-
     new_node = init_site_list_node(blocked_site);
     if (new_node == NULL){
         free_config(config);
@@ -100,7 +98,6 @@ void parse_config_file(char *config_filename, config_t *config){
     }
 
     while (fgets(line_buffer, LINE_BUFFER_LENGTH, config_fp) != NULL){
-        printf("line buffer: %s\n", line_buffer);
         num_tokens = tokenize_line(line_buffer, line_tokens);
         
         if (num_tokens == 0)

@@ -22,15 +22,12 @@ int main(int argc, char *argv[]) {
 
     parse_config_file(config_filename, &config);
 
-    printf("about to print\n");
     print_config(&config);
 
-    printf("about to handle fucking\n");
     create_server_socket_listening_on_port();
 
     handle_incoming_connections();
 
-    printf("about to free config\n");
     free_config(&config);
 
     return 0;
