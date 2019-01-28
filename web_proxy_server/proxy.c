@@ -8,10 +8,17 @@
 
 #include "config.h"
 #include "gwa_sockets.h"
+#include "gwa_ip_address.h"
 
 #define BACKLOG 10
+#define CLIENT_REQUEST_BUFLEN 1000
+#define PROXY_REQUEST_BUFLEN 1000
+#define CLIENT_RESPONSE_BUFLEN 1000
+#define PROXY_RESPONSE_BUFLEN 1000
 
-int create_server_socket_listening_on_port(int port){
+#define HOSTNAME_LEN 1023
+
+int create_server_socket_listening_on_port(char* port){
     int sockfd;
     struct addrinfo *servinfo;
 
@@ -28,10 +35,23 @@ int create_server_socket_listening_on_port(int port){
     return sockfd;
 }
 
-void do_proxy_stuff(){}
+int do_proxy_stuff(int sockfd){
+    int bytes_received;
+    char receive_buf[CLIENT_REQUEST_BUFLEN];
+
+     bytes_received = receive_on_socket(sockfd, receive_buf, CLIENT_REQUEST_BUFLEN);
+     if (bytes_received == 0){
+         printf("Server received no bytes on socket");
+         return -1;
+     }
+
+     printf("server received the following request:\n----------\n%s\n-------------\n\n", receive_buf);
+
+     return 0;
+}
 
 int main(int argc, char *argv[]) {
-    int sockfd, newfd;
+    int sockfd, newfd, rc;
     pid_t cpid;
     config_t config;
     char *config_filename;
@@ -47,11 +67,14 @@ int main(int argc, char *argv[]) {
     parse_config_file(config_filename, &config);
 
     print_config(&config);
+	print_ip_address();
 
     sockfd = create_server_socket_listening_on_port(config.port);
 
     while (1){
+		printf("waiting for a connection...\n");
         newfd = accept_connection_on_socket(sockfd);
+		printf("got a connection...\n");
 
         if ((cpid = fork()) == -1){
             perror("fork");
@@ -61,7 +84,12 @@ int main(int argc, char *argv[]) {
         else if (cpid == 0){
             close(sockfd);
 
-            do_proxy_stuff();
+            rc = do_proxy_stuff(newfd);
+            if (rc == 0)
+                printf("Something went wrong on a connection\n");
+
+            free_config(&config);
+            exit(0);
         }
         else
             close(newfd);

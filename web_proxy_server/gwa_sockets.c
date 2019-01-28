@@ -32,7 +32,8 @@ struct addrinfo *get_address_info(char* hostname, char* port)
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE; // use my IP
 
-    if ((rv = getaddrinfo(hostname, PORT, &hints, &servinfo)) != 0) {
+	printf("DEBUG: port %s\n", port);
+    if ((rv = getaddrinfo(hostname, port, &hints, &servinfo)) != 0) {
         fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
         exit(1);
     }

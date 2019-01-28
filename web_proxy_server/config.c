@@ -107,7 +107,7 @@ void parse_config_file(char *config_filename, config_t *config){
             continue;
 
         else if (strcmp("port", line_tokens[0]) == 0)
-            config->port = atoi(line_tokens[1]);
+            config->port = line_tokens[1];
 
         else if (strcmp("block", line_tokens[0]) == 0)
             add_blocked_site(config, line_tokens[1]);
@@ -125,7 +125,8 @@ void print_config(config_t *config){
     printf("Configuration: \n");
     site_list_node *cur_node, *next_node;
 
-    printf("->port: %d\n", config->port);
+
+    printf("->port: %s\n", config->port);
 
     cur_node = config->blocked_sites;
     if (cur_node == NULL)

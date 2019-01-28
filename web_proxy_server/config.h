@@ -6,7 +6,7 @@ typedef struct __site_list_node {
 
 
 typedef struct __config_t {
-    int port;
+    char* port;
     site_list_node *blocked_sites;
     site_list_node *last_blocked_site;
 } config_t;
