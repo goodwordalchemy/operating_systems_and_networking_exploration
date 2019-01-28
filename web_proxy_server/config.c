@@ -137,4 +137,5 @@ void print_config(config_t *config){
         printf("->blocked site: %s\n", cur_node->site);
         next_node = cur_node->next;
     }
+    printf("\n");
 }
