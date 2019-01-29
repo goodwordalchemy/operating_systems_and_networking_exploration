@@ -112,6 +112,7 @@ int create_connected_socket(struct addrinfo *servinfo)
     struct addrinfo *p;
     int sockfd;
     char s[INET6_ADDRSTRLEN];
+
     // loop through all the results and connect to the first we can
     for(p = servinfo; p != NULL; p = p->ai_next) {
         if ((sockfd = socket(p->ai_family, p->ai_socktype,
