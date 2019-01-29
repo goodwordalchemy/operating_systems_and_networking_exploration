@@ -23,10 +23,6 @@
 #include "rdt_struct.h"
 #include "rdt_receiver.h"
 
-#define INITIAL_SEQUENCE_NUMBER 0
-
-int next_seq_num = INITIAL_SEQUENCE_NUMBER;
-int send_base = INITIAL_SEQUENCE_NUMBER;
 
 /* receiver initialization, called once at the very beginning */
 void Receiver_Init()
