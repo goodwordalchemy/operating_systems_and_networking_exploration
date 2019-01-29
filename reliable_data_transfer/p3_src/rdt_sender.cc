@@ -112,10 +112,10 @@ void Sender_FromLowerLayer(struct packet *pkt)
 
     printf("sender --> received ack_num: %d\n", ack_num);
 
-    if (ack_num > send_base)
+    if (ack_num != send_base)
         send_base = ack_num;
 
-    /* printf("sender --> incremented send_base: %d\n", send_base); */
+    printf("sender --> incremented send_base: %d\n", send_base);
 }
 
 /* event handler, called when the timer expires */
