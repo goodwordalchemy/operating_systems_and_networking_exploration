@@ -70,7 +70,7 @@ void Receiver_FromLowerLayer(struct packet *pkt)
     int pkt_seq_num = pkt->data[1];
     printf("receiver --> received pkt_seq_num: %d\n", pkt_seq_num);
     if (pkt_seq_num == ack_num)
-        ack_num += pkt->data[0];
+        ack_num++;
     ack_num %= MAX_SEQ_NUM;
 
     packet ack_pkt;

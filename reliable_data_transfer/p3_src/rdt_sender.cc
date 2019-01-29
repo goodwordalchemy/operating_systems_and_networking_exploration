@@ -83,7 +83,7 @@ void Sender_FromUpperLayer(struct message *msg)
         cursor += maxpayload_size;
 
         /* move the seqence number */
-        next_seq_num += maxpayload_size;
+        next_seq_num++;
         next_seq_num %= MAX_SEQ_NUM; 
     }
 
@@ -99,7 +99,7 @@ void Sender_FromUpperLayer(struct message *msg)
         Sender_ToLowerLayer(&pkt);
 
         /* move the seqence number */
-        next_seq_num += pkt.data[0];
+        next_seq_num++;
         next_seq_num %= MAX_SEQ_NUM; 
     }
 }
