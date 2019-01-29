@@ -23,6 +23,16 @@
 #include "rdt_struct.h"
 #include "rdt_sender.h"
 
+#define INITIAL_SEQUENCE_NUMBER 1
+#define WINDOW_SIZE 10
+#define NUM_ARRIVIUNG_MESSAGES 10
+
+int next_seq_num = INITIAL_SEQUENCE_NUMBER;
+int send_base = INITIAL_SEQUENCE_NUMBER;
+
+int seq_num_to_window_idx(int seq_num){
+    return ((seq_num - 1) / RDT_PKTSIZE) % WINDOW_SIZE;
+}
 
 /* sender initialization, called once at the very beginning */
 void Sender_Init()
@@ -58,25 +68,25 @@ void Sender_FromUpperLayer(struct message *msg)
     int cursor = 0;
 
     while (msg->size-cursor > maxpayload_size) {
-	/* fill in the packet */
-	pkt.data[0] = maxpayload_size;
-	memcpy(pkt.data+header_size, msg->data+cursor, maxpayload_size);
+        /* fill in the packet */
+        pkt.data[0] = maxpayload_size;
+        memcpy(pkt.data+header_size, msg->data+cursor, maxpayload_size);
 
-	/* send it out through the lower layer */
-	Sender_ToLowerLayer(&pkt);
+        /* send it out through the lower layer */
+        Sender_ToLowerLayer(&pkt);
 
-	/* move the cursor */
-	cursor += maxpayload_size;
+        /* move the cursor */
+        cursor += maxpayload_size;
     }
 
     /* send out the last packet */
     if (msg->size > cursor) {
-	/* fill in the packet */
-	pkt.data[0] = msg->size-cursor;
-	memcpy(pkt.data+header_size, msg->data+cursor, pkt.data[0]);
+    /* fill in the packet */
+    pkt.data[0] = msg->size-cursor;
+    memcpy(pkt.data+header_size, msg->data+cursor, pkt.data[0]);
 
-	/* send it out through the lower layer */
-	Sender_ToLowerLayer(&pkt);
+    /* send it out through the lower layer */
+    Sender_ToLowerLayer(&pkt);
     }
 }
 

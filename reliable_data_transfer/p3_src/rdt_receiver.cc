@@ -23,6 +23,7 @@
 #include "rdt_struct.h"
 #include "rdt_receiver.h"
 
+int ack_num = 1;
 
 /* receiver initialization, called once at the very beginning */
 void Receiver_Init()
