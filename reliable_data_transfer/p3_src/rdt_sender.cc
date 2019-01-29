@@ -27,8 +27,8 @@
 #define WINDOW_SIZE 10
 #define NUM_ARRIVIUNG_MESSAGES 10
 
-int next_seq_num = INITIAL_SEQUENCE_NUMBER;
-int send_base = INITIAL_SEQUENCE_NUMBER;
+int next_seq_num;
+int send_base;
 
 int seq_num_to_window_idx(int seq_num){
     return ((seq_num - 1) / RDT_PKTSIZE) % WINDOW_SIZE;
@@ -37,6 +37,8 @@ int seq_num_to_window_idx(int seq_num){
 /* sender initialization, called once at the very beginning */
 void Sender_Init()
 {
+    next_seq_num = INITIAL_SEQUENCE_NUMBER;
+    send_base = INITIAL_SEQUENCE_NUMBER;
     fprintf(stdout, "At %.2fs: sender initializing ...\n", GetSimulationTime());
 }
 
@@ -54,7 +56,7 @@ void Sender_Final()
 void Sender_FromUpperLayer(struct message *msg)
 {
     /* 1-byte header indicating the size of the payload */
-    int header_size = 1;
+    int header_size = 2;
 
     /* maximum payload size */
     int maxpayload_size = RDT_PKTSIZE - header_size;
@@ -70,6 +72,8 @@ void Sender_FromUpperLayer(struct message *msg)
     while (msg->size-cursor > maxpayload_size) {
         /* fill in the packet */
         pkt.data[0] = maxpayload_size;
+        pkt.data[1] = next_seq_num;
+        printf("sender --> sending seq_num: %d\n", next_seq_num);
         memcpy(pkt.data+header_size, msg->data+cursor, maxpayload_size);
 
         /* send it out through the lower layer */
@@ -77,16 +81,26 @@ void Sender_FromUpperLayer(struct message *msg)
 
         /* move the cursor */
         cursor += maxpayload_size;
+
+        /* move the seqence number */
+        next_seq_num += maxpayload_size;
+        next_seq_num %= MAX_SEQ_NUM; 
     }
 
     /* send out the last packet */
     if (msg->size > cursor) {
-    /* fill in the packet */
-    pkt.data[0] = msg->size-cursor;
-    memcpy(pkt.data+header_size, msg->data+cursor, pkt.data[0]);
+        /* fill in the packet */
+        pkt.data[0] = msg->size-cursor;
+        pkt.data[1] = next_seq_num;
+        printf("sender --> sending seq_num: %d\n", next_seq_num);
+        memcpy(pkt.data+header_size, msg->data+cursor, pkt.data[0]);
 
-    /* send it out through the lower layer */
-    Sender_ToLowerLayer(&pkt);
+        /* send it out through the lower layer */
+        Sender_ToLowerLayer(&pkt);
+
+        /* move the seqence number */
+        next_seq_num += pkt.data[0];
+        next_seq_num %= MAX_SEQ_NUM; 
     }
 }
 
@@ -94,6 +108,14 @@ void Sender_FromUpperLayer(struct message *msg)
    sender */
 void Sender_FromLowerLayer(struct packet *pkt)
 {
+    int ack_num = pkt->data[1];
+
+    printf("sender --> received ack_num: %d\n", ack_num);
+
+    if (ack_num > send_base)
+        send_base = ack_num;
+
+    /* printf("sender --> incremented send_base: %d\n", send_base); */
 }
 
 /* event handler, called when the timer expires */
