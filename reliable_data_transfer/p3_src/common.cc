@@ -1,21 +1,50 @@
 #include "common.h"
 
-void int_to_char4(int n, char *array){
+void int_to_char(int n, char *array, int nbytes){
     int i;
-    for (i = 0; i < 4; i++){
-        array[i] = ((n >> ((3-i) * 8)) & 0xFF) - 128;
+    for (i = 0; i < nbytes; i++){
+        array[i] = ((n >> ((nbytes-1-i) * 8)) & 0xFF) - 128;
     }
-
-
 }
 
-int char4_to_int(char *array){
+int char_to_int(char *array, int nbytes){
     int i, ret, cur;
     ret = 0;
-    for (i = 0; i < 4; i++){
-        cur = (array[i] + 128) << ((3 - i) * 8);
+    for (i = 0; i < nbytes; i++){
+        cur = (array[i] + 128) << ((nbytes-1-i) * 8);
         ret += (int) cur;
     }
 
     return ret;
+}
+
+void calculate_checksum(char *message, int length, char *checksum, int cslength){
+    int i; 
+    unsigned long sum;
+    unsigned short word16;
+
+    sum = 0;
+    for (i = 0; i < length; i += 2){
+        word16 = ((message[i]<<8)&0xFF00)+(message[i+1]&0xFF);
+        sum += (unsigned long) word16;
+    }
+
+    /* add the 16 carries from the left. */
+    while (sum >> 16)
+        sum = (sum & 0xFFFF) + (sum >> 16);
+
+    word16 = ~(unsigned short) sum;
+
+    int_to_char(word16, checksum, cslength);
+
+}
+
+int verify_checksum(char *message, int length, char *checksum, int cslength){
+    char check[cslength];
+    calculate_checksum(message, length, check, cslength);
+
+    if (char_to_int(check, cslength) == char_to_int(checksum, cslength)){
+        return 1;
+    }
+    return 0;
 }

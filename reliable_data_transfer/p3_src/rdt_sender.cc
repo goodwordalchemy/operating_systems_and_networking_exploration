@@ -80,8 +80,8 @@ void Sender_Final()
 packet *create_packet(int payload_size, int seq_num, char *data){
     packet *pkt = (packet*)malloc(sizeof(packet));
     pkt->data[0] = payload_size;
-    int_to_char4(seq_num, pkt->data + 1);
-    if (char4_to_int(pkt->data + 1) != seq_num){
+    int_to_char(seq_num, pkt->data + 1, 4);
+    if (char_to_int(pkt->data + 1, 4) != seq_num){
         printf("integer to character conversion did not work\n");
         exit(1);
     }
@@ -169,7 +169,7 @@ void Sender_FromUpperLayer(struct message *msg)
 void Sender_FromLowerLayer(struct packet *pkt)
 {
     int i;
-    int ack_num = char4_to_int(pkt->data + 1);
+    int ack_num = char_to_int(pkt->data + 1, 4);
 
     /* printf("sender --> received ack_num: %d\n", ack_num); */
 

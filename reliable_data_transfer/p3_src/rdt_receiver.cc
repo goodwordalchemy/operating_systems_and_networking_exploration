@@ -46,7 +46,7 @@ void Receiver_Final()
 void Receiver_FromLowerLayer(struct packet *pkt)
 {
 
-    int pkt_seq_num = char4_to_int(pkt->data + 1);
+    int pkt_seq_num = char_to_int(pkt->data + 1, 4);
     /* printf("receiver --> received pkt_seq_num: %d\n", pkt_seq_num); */
 
     if (pkt_seq_num == ack_num) {
@@ -78,7 +78,7 @@ void Receiver_FromLowerLayer(struct packet *pkt)
 
     packet ack_pkt;
     ack_pkt.data[0] = 1;
-    int_to_char4(ack_num, ack_pkt.data + 1);
+    int_to_char(ack_num, ack_pkt.data + 1, 4);
 
     /* printf("receiver --> sending ack_num: %d\n", ack_num); */
     Receiver_ToLowerLayer(&ack_pkt);
