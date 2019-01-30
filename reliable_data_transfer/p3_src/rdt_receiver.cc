@@ -49,9 +49,11 @@ void Receiver_FromLowerLayer(struct packet *pkt)
     int pkt_seq_num = char_to_int(pkt->data + 1, 4);
     /* printf("receiver --> received pkt_seq_num: %d\n", pkt_seq_num); */
     
-    
+    int packet_not_corrupted = check_packet_not_corrupted(pkt->data);
+    if(!packet_not_corrupted)
+        printf("receiver --> found corrupted packet\n");
 
-    if (pkt_seq_num == ack_num || check_packet_not_corrupted(pkt->data)) {
+    if (pkt_seq_num == ack_num && packet_not_corrupted) {
         printf("sending packet]\n");
 
         /* construct a message and deliver to the upper layer */

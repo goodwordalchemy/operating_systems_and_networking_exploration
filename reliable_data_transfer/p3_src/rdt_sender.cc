@@ -179,7 +179,9 @@ void Sender_FromLowerLayer(struct packet *pkt)
     printf("sender --> received ack_num: %d\n", ack_num);
 
     if (!check_packet_not_corrupted(pkt->data)){
-        fprintf(stderr, "packet appears to be corrupted\n");
+        fprintf(stderr, "sender --> packet appears to be corrupted\n");
+        if (!Sender_isTimerSet())
+            Sender_StartTimer(TIMEOUT);
         return;
     }
 
