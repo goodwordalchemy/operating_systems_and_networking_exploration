@@ -25,6 +25,7 @@
 
 #define INITIAL_SEQUENCE_NUMBER 1
 #define INITIAL_SEND_BASE 0
+#define INITIAL_NEXT_SEND 1
 #define WINDOW_SIZE 10
 #define NUM_ARRIVIUNG_MESSAGES 10
 
@@ -32,18 +33,23 @@
 
 int next_seq_num;
 int send_base;
+int next_send;
 
 packet *send_buffer[MAX_SEQ_NUM];
 
-int seq_num_to_window_idx(int seq_num){
-    return ((seq_num - 1) / RDT_PKTSIZE) % WINDOW_SIZE;
+int modulo_greater_than(int a, int b, int modulo, int window){
+    if (a > b || (a + window > (b+window) % modulo))
+        return 1;
+    return 0;
 }
+
 
 /* sender initialization, called once at the very beginning */
 void Sender_Init()
 {
     next_seq_num = INITIAL_SEQUENCE_NUMBER;
     send_base = INITIAL_SEND_BASE;
+    next_send = INITIAL_NEXT_SEND;
     fprintf(stdout, "At %.2fs: sender initializing ...\n", GetSimulationTime());
 }
 
@@ -72,13 +78,17 @@ packet *create_packet(int payload_size, int header_size, int seq_num, char *data
 }
 
 void transmit_n_packets(int n){
-    int i;
     packet *pkt;
 
-    for (i = send_base; i < send_base + n; i++){
-        if ((pkt = send_buffer[i]) == NULL)
+    while (modulo_greater_than(send_base + WINDOW_SIZE, next_send, MAX_SEQ_NUM, WINDOW_SIZE)){
+        printf("next send: %d\n", next_send);
+        if ((pkt = send_buffer[next_send]) == NULL)
             break;
+
         Sender_ToLowerLayer(pkt);
+
+        next_send++;
+        next_send = next_send % MAX_SEQ_NUM;
     }
 }
 
@@ -130,7 +140,7 @@ void Sender_FromUpperLayer(struct message *msg)
         next_seq_num %= MAX_SEQ_NUM; 
     }
 
-    transmit_n_packets(WINDOW_SIZE);
+    transmit_n_packets(1);
     printf("finished transmitting first set of packets\n");
 }
 
@@ -143,7 +153,7 @@ void Sender_FromLowerLayer(struct packet *pkt)
 
     printf("sender --> received ack_num: %d\n", ack_num);
 
-    if (ack_num > send_base || (ack_num + 10 > (send_base+10) % MAX_SEQ_NUM)){
+    if (modulo_greater_than(ack_num, send_base, MAX_SEQ_NUM, WINDOW_SIZE)){
         for (i = send_base; i < ack_num; i++){
             free(send_buffer[i]);
             send_buffer[i] = NULL;
