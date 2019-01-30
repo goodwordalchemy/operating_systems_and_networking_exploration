@@ -10,8 +10,6 @@
 #ifndef _RDT_STRUCT_H_
 #define _RDT_STRUCT_H_
 
-#define MAX_SEQ_NUM 128
-
 /* sanity check utility */
 #define ASSERT(x) \
     if (!(x)) { \

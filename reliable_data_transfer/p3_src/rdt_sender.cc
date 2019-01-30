@@ -63,16 +63,26 @@ void Sender_Final()
     fprintf(stdout, "At %.2fs: sender finalizing ...\n", GetSimulationTime());
 
     int i;
-    for (i = 0; i < MAX_SEQ_NUM; i++)
+    for (i = send_base; i < next_seq_num; i++)
         if (send_buffer[i] != NULL) 
             free(send_buffer[i]);
 }
 
-packet *create_packet(int payload_size, int header_size, int seq_num, char *data){
+void print_header(char *data){
+    int i;
+    for (i = 0; i < HEADER_SIZE; i++)
+        printf("header #%d: %d\n", i, data[i]);
+}
+packet *create_packet(int payload_size, int seq_num, char *data){
     packet *pkt = (packet*)malloc(sizeof(packet));
     pkt->data[0] = payload_size;
-    pkt->data[1] = seq_num;
-    memcpy(pkt->data+header_size, data, payload_size);
+    int_to_char4(seq_num, pkt->data + 1);
+    print_header(pkt->data);
+    if (char4_to_int(pkt->data + 1) != seq_num){
+        printf("integer to character conversion did not work\n");
+        exit(1);
+    }
+    memcpy(pkt->data+HEADER_SIZE, data, payload_size);
 
     return pkt;
 
@@ -97,11 +107,8 @@ void transmit_n_packets(int n){
    sender */
 void Sender_FromUpperLayer(struct message *msg)
 {
-    /* 1-byte header indicating the size of the payload */
-    int header_size = 2;
-
     /* maximum payload size */
-    int maxpayload_size = RDT_PKTSIZE - header_size;
+    int maxpayload_size = RDT_PKTSIZE - HEADER_SIZE;
 
     /* split the message if it is too big */
 
@@ -113,7 +120,7 @@ void Sender_FromUpperLayer(struct message *msg)
     while (msg->size-cursor > maxpayload_size) {
         /* create a packet */
         printf("sender --> creating packet with seq_num: %d\n", next_seq_num);
-        pkt = create_packet(maxpayload_size, header_size, next_seq_num, msg->data+cursor);
+        pkt = create_packet(maxpayload_size, next_seq_num, msg->data+cursor);
 
         /* add packet to buffer */
         if (send_buffer[next_seq_num] != NULL){
@@ -134,7 +141,7 @@ void Sender_FromUpperLayer(struct message *msg)
     if (msg->size > cursor) {
         /* create a packet */
         printf("sender --> creating packet with seq_num: %d\n", next_seq_num);
-        pkt = create_packet(msg->size-cursor, header_size, next_seq_num, msg->data+cursor);
+        pkt = create_packet(msg->size-cursor, next_seq_num, msg->data+cursor);
         printf("sender --> message content: %s\n", pkt->data);
 
         /* add packet to buffer */
@@ -158,7 +165,7 @@ void Sender_FromUpperLayer(struct message *msg)
 void Sender_FromLowerLayer(struct packet *pkt)
 {
     int i;
-    int ack_num = pkt->data[1];
+    int ack_num = char4_to_int(pkt->data + 1);
 
     printf("sender --> received ack_num: %d\n", ack_num);
 

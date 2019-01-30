@@ -45,8 +45,6 @@ void Receiver_Final()
    receiver */
 void Receiver_FromLowerLayer(struct packet *pkt)
 {
-    /* 1-byte header indicating the size of the payload */
-    int header_size = 2;
 
     /* construct a message and deliver to the upper layer */
     struct message *msg = (struct message*) malloc(sizeof(struct message));
@@ -56,11 +54,11 @@ void Receiver_FromLowerLayer(struct packet *pkt)
 
     /* sanity check in case the packet is corrupted */
     if (msg->size<0) msg->size=0;
-    if (msg->size>RDT_PKTSIZE-header_size) msg->size=RDT_PKTSIZE-header_size;
+    if (msg->size>RDT_PKTSIZE-HEADER_SIZE) msg->size=RDT_PKTSIZE-HEADER_SIZE;
 
     msg->data = (char*) malloc(msg->size);
     ASSERT(msg->data!=NULL);
-    memcpy(msg->data, pkt->data+header_size, msg->size);
+    memcpy(msg->data, pkt->data+HEADER_SIZE, msg->size);
     Receiver_ToUpperLayer(msg);
 
     /* don't forget to free the space */
@@ -68,7 +66,7 @@ void Receiver_FromLowerLayer(struct packet *pkt)
     if (msg!=NULL) free(msg);
 
     /* send ack packet */
-    int pkt_seq_num = pkt->data[1];
+    int pkt_seq_num = char4_to_int(pkt->data + 1);
     printf("receiver --> received pkt_seq_num: %d\n", pkt_seq_num);
     if (pkt_seq_num == ack_num)
         ack_num++;
@@ -76,7 +74,7 @@ void Receiver_FromLowerLayer(struct packet *pkt)
 
     packet ack_pkt;
     ack_pkt.data[0] = 1;
-    ack_pkt.data[1] = ack_num;
+    int_to_char4(ack_num, ack_pkt.data + 1);
 
     printf("receiver --> sending ack_num: %d\n", ack_num);
     Receiver_ToLowerLayer(&ack_pkt);
