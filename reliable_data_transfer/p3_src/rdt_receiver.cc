@@ -46,31 +46,35 @@ void Receiver_Final()
 void Receiver_FromLowerLayer(struct packet *pkt)
 {
 
-    /* construct a message and deliver to the upper layer */
-    struct message *msg = (struct message*) malloc(sizeof(struct message));
-    ASSERT(msg!=NULL);
-
-    msg->size = pkt->data[0];
-
-    /* sanity check in case the packet is corrupted */
-    if (msg->size<0) msg->size=0;
-    if (msg->size>RDT_PKTSIZE-HEADER_SIZE) msg->size=RDT_PKTSIZE-HEADER_SIZE;
-
-    msg->data = (char*) malloc(msg->size);
-    ASSERT(msg->data!=NULL);
-    memcpy(msg->data, pkt->data+HEADER_SIZE, msg->size);
-    Receiver_ToUpperLayer(msg);
-
-    /* don't forget to free the space */
-    if (msg->data!=NULL) free(msg->data);
-    if (msg!=NULL) free(msg);
-
-    /* send ack packet */
     int pkt_seq_num = char4_to_int(pkt->data + 1);
     /* printf("receiver --> received pkt_seq_num: %d\n", pkt_seq_num); */
-    if (pkt_seq_num == ack_num)
+
+    if (pkt_seq_num == ack_num) {
+
+        /* construct a message and deliver to the upper layer */
+        struct message *msg = (struct message*) malloc(sizeof(struct message));
+        ASSERT(msg!=NULL);
+
+        msg->size = pkt->data[0];
+
+        /* sanity check in case the packet is corrupted */
+        if (msg->size<0) msg->size=0;
+        if (msg->size>RDT_PKTSIZE-HEADER_SIZE) msg->size=RDT_PKTSIZE-HEADER_SIZE;
+
+        msg->data = (char*) malloc(msg->size);
+        ASSERT(msg->data!=NULL);
+        memcpy(msg->data, pkt->data+HEADER_SIZE, msg->size);
+        Receiver_ToUpperLayer(msg);
+
+        /* don't forget to free the space */
+        if (msg->data!=NULL) free(msg->data);
+        if (msg!=NULL) free(msg);
+
+        /* increment the ack_num */
         ack_num++;
-    ack_num %= MAX_SEQ_NUM;
+        ack_num %= MAX_SEQ_NUM;
+    }
+    /* send ack packet */
 
     packet ack_pkt;
     ack_pkt.data[0] = 1;

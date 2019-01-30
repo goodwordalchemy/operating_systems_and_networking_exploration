@@ -29,6 +29,7 @@
 #define INITIAL_NEXT_SEND 1
 #define WINDOW_SIZE 10
 #define NUM_ARRIVIUNG_MESSAGES 10
+#define TIMEOUT 0.3
 
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
 
@@ -90,7 +91,7 @@ packet *create_packet(int payload_size, int seq_num, char *data){
 
 }
 
-void transmit_n_packets(int n){
+void transmit_n_new_packets(int n){
     packet *pkt;
 
     while (modulo_greater_than(send_base + WINDOW_SIZE, next_send, MAX_SEQ_NUM, WINDOW_SIZE)){
@@ -157,7 +158,10 @@ void Sender_FromUpperLayer(struct message *msg)
         next_seq_num %= MAX_SEQ_NUM; 
     }
 
-    transmit_n_packets(WINDOW_SIZE);
+    transmit_n_new_packets(WINDOW_SIZE);
+
+    if (!Sender_isTimerSet())
+        Sender_StartTimer(TIMEOUT);
 }
 
 /* event handler, called when a packet is passed from the lower layer at the 
@@ -177,13 +181,33 @@ void Sender_FromLowerLayer(struct packet *pkt)
 
         send_base = ack_num;
 
-        transmit_n_packets(1);
+        transmit_n_new_packets(1);
+
+        Sender_StopTimer();
+        if (modulo_greater_than(next_seq_num, send_base, MAX_SEQ_NUM, WINDOW_SIZE))
+            Sender_StartTimer(TIMEOUT);
     }
 
     /* printf("sender --> incremented send_base: %d\n", send_base); */
 }
 
+void retransmit_packets(){
+    packet *pkt;
+    int i;
+
+    for (i = send_base; i < next_send; i++){
+        if ((pkt = send_buffer[i]) == NULL){
+            fprintf(stderr, "in flight packet's pointer was found to be null.  This indicates a bug\n");
+            exit(1);
+        }
+
+        Sender_ToLowerLayer(pkt);
+    }
+}
+
 /* event handler, called when the timer expires */
 void Sender_Timeout()
 {
+    retransmit_packets();
+    Sender_StartTimer(TIMEOUT);
 }
