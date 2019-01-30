@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "common.h"
 #include "rdt_struct.h"
 #include "rdt_sender.h"
 
@@ -156,7 +157,7 @@ void Sender_FromUpperLayer(struct message *msg)
    sender */
 void Sender_FromLowerLayer(struct packet *pkt)
 {
-    int i, diff;
+    int i;
     int ack_num = pkt->data[1];
 
     printf("sender --> received ack_num: %d\n", ack_num);
@@ -166,7 +167,6 @@ void Sender_FromLowerLayer(struct packet *pkt)
             free(send_buffer[i]);
             send_buffer[i] = NULL;
         }
-        /* diff = MIN(ack_num - send_base, (ack_num + 10) - ((send_base+10) % MAX_SEQ_NUM)); */
 
         send_base = ack_num;
 

@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "common.h"
 #include "rdt_struct.h"
 #include "rdt_receiver.h"
 
