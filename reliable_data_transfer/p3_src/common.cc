@@ -1,4 +1,7 @@
+#include <string.h>
+
 #include "common.h"
+#include "rdt_struct.h"
 
 void int_to_char(int n, char *array, int nbytes){
     int i;
@@ -48,3 +51,27 @@ int verify_checksum(char *message, int length, char *checksum, int cslength){
     }
     return 0;
 }
+
+void add_checksum_at_index(char *data, int index){
+    char checksum[CHECKSUM_SIZE];
+
+    memset(data+index, 0, CHECKSUM_SIZE + 1);
+    calculate_checksum(data, RDT_PKTSIZE, checksum, CHECKSUM_SIZE);
+    memcpy(data+index, checksum, CHECKSUM_SIZE);
+}
+
+int check_packet_not_corrupted(char *data){
+    int res;
+    char checksum[CHECKSUM_SIZE];
+    char data_copy[RDT_PKTSIZE];
+
+    memcpy(checksum, data+5, CHECKSUM_SIZE);
+
+    memcpy(data_copy, data, RDT_PKTSIZE);
+    memset(data_copy+5, 0, CHECKSUM_SIZE + 1);
+
+    res = verify_checksum(data_copy, RDT_PKTSIZE, checksum, CHECKSUM_SIZE);
+
+    return res;
+}
+

@@ -78,7 +78,10 @@ void Sender_Final()
 }
 
 packet *create_packet(int payload_size, int seq_num, char *data){
+    char checksum[CHECKSUM_SIZE];
+
     packet *pkt = (packet*)malloc(sizeof(packet));
+
     pkt->data[0] = payload_size;
     int_to_char(seq_num, pkt->data + 1, 4);
     if (char_to_int(pkt->data + 1, 4) != seq_num){
@@ -86,6 +89,8 @@ packet *create_packet(int payload_size, int seq_num, char *data){
         exit(1);
     }
     memcpy(pkt->data+HEADER_SIZE, data, payload_size);
+
+    add_checksum_at_index(pkt->data, 5);
 
     return pkt;
 
@@ -171,7 +176,12 @@ void Sender_FromLowerLayer(struct packet *pkt)
     int i;
     int ack_num = char_to_int(pkt->data + 1, 4);
 
-    /* printf("sender --> received ack_num: %d\n", ack_num); */
+    printf("sender --> received ack_num: %d\n", ack_num);
+
+    if (!check_packet_not_corrupted(pkt->data)){
+        fprintf(stderr, "packet appears to be corrupted\n");
+        return;
+    }
 
     if (modulo_greater_than(ack_num, send_base, MAX_SEQ_NUM, WINDOW_SIZE)){
         for (i = send_base; i < ack_num; i++){
