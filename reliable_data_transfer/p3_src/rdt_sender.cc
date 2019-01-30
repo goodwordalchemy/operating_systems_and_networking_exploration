@@ -38,12 +38,20 @@ int next_send;
 
 packet *send_buffer[MAX_SEQ_NUM];
 
+/* Just in case we overrun the nearly-infinite buffer, which used to be much smaller */
 int modulo_greater_than(int a, int b, int modulo, int window){
     if (a > b || (a + window > (b+window) % modulo))
         return 1;
     return 0;
 }
 
+/* Useful for debugging */
+void print_header(char *data){
+    int i;
+    for (i = 0; i < HEADER_SIZE; i++)
+        printf("header #%d: %d\n", i, data[i]);
+
+}
 
 /* sender initialization, called once at the very beginning */
 void Sender_Init()
@@ -68,16 +76,10 @@ void Sender_Final()
             free(send_buffer[i]);
 }
 
-void print_header(char *data){
-    int i;
-    for (i = 0; i < HEADER_SIZE; i++)
-        printf("header #%d: %d\n", i, data[i]);
-}
 packet *create_packet(int payload_size, int seq_num, char *data){
     packet *pkt = (packet*)malloc(sizeof(packet));
     pkt->data[0] = payload_size;
     int_to_char4(seq_num, pkt->data + 1);
-    print_header(pkt->data);
     if (char4_to_int(pkt->data + 1) != seq_num){
         printf("integer to character conversion did not work\n");
         exit(1);
@@ -92,7 +94,6 @@ void transmit_n_packets(int n){
     packet *pkt;
 
     while (modulo_greater_than(send_base + WINDOW_SIZE, next_send, MAX_SEQ_NUM, WINDOW_SIZE)){
-        printf("next send: %d\n", next_send);
         if ((pkt = send_buffer[next_send]) == NULL)
             break;
 
@@ -119,7 +120,7 @@ void Sender_FromUpperLayer(struct message *msg)
 
     while (msg->size-cursor > maxpayload_size) {
         /* create a packet */
-        printf("sender --> creating packet with seq_num: %d\n", next_seq_num);
+        /* printf("sender --> creating packet with seq_num: %d\n", next_seq_num); */
         pkt = create_packet(maxpayload_size, next_seq_num, msg->data+cursor);
 
         /* add packet to buffer */
@@ -140,9 +141,9 @@ void Sender_FromUpperLayer(struct message *msg)
     /* send out the last packet */
     if (msg->size > cursor) {
         /* create a packet */
-        printf("sender --> creating packet with seq_num: %d\n", next_seq_num);
+        /* printf("sender --> creating packet with seq_num: %d\n", next_seq_num); */
         pkt = create_packet(msg->size-cursor, next_seq_num, msg->data+cursor);
-        printf("sender --> message content: %s\n", pkt->data);
+        /* printf("sender --> message content: %s\n", pkt->data); */
 
         /* add packet to buffer */
         if (send_buffer[next_seq_num] != NULL){
@@ -157,7 +158,6 @@ void Sender_FromUpperLayer(struct message *msg)
     }
 
     transmit_n_packets(WINDOW_SIZE);
-    printf("finished transmitting first set of packets\n");
 }
 
 /* event handler, called when a packet is passed from the lower layer at the 
@@ -167,7 +167,7 @@ void Sender_FromLowerLayer(struct packet *pkt)
     int i;
     int ack_num = char4_to_int(pkt->data + 1);
 
-    printf("sender --> received ack_num: %d\n", ack_num);
+    /* printf("sender --> received ack_num: %d\n", ack_num); */
 
     if (modulo_greater_than(ack_num, send_base, MAX_SEQ_NUM, WINDOW_SIZE)){
         for (i = send_base; i < ack_num; i++){
@@ -180,7 +180,7 @@ void Sender_FromLowerLayer(struct packet *pkt)
         transmit_n_packets(1);
     }
 
-    printf("sender --> incremented send_base: %d\n", send_base);
+    /* printf("sender --> incremented send_base: %d\n", send_base); */
 }
 
 /* event handler, called when the timer expires */
