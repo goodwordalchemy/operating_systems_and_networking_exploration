@@ -62,7 +62,7 @@ void Sender_Final()
 }
 
 packet *create_packet(int payload_size, int header_size, int seq_num, char *data){
-    packet *pkt = (packet*)malloc(sizeof(pkt));
+    packet *pkt = (packet*)malloc(sizeof(packet));
     pkt->data[0] = payload_size;
     pkt->data[1] = seq_num;
     memcpy(pkt->data+header_size, data, payload_size);
@@ -103,7 +103,6 @@ void Sender_FromUpperLayer(struct message *msg)
         /* create a packet */
         printf("sender --> creating packet with seq_num: %d\n", next_seq_num);
         pkt = create_packet(maxpayload_size, header_size, next_seq_num, msg->data+cursor);
-        printf("sender --> message content: %s\n", pkt->data);
 
         /* add packet to buffer */
         send_buffer[next_seq_num] = pkt;
@@ -149,11 +148,11 @@ void Sender_FromLowerLayer(struct packet *pkt)
             free(send_buffer[i]);
             send_buffer[i] = NULL;
         }
-        diff = MIN(ack_num - send_base, (ack_num + 10) - ((send_base+10) % MAX_SEQ_NUM));
+        /* diff = MIN(ack_num - send_base, (ack_num + 10) - ((send_base+10) % MAX_SEQ_NUM)); */
 
         send_base = ack_num;
 
-        transmit_n_packets(diff);
+        transmit_n_packets(1);
     }
 
     printf("sender --> incremented send_base: %d\n", send_base);
