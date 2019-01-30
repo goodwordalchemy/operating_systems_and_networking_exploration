@@ -24,11 +24,16 @@
 #include "rdt_sender.h"
 
 #define INITIAL_SEQUENCE_NUMBER 1
+#define INITIAL_SEND_BASE 0
 #define WINDOW_SIZE 10
 #define NUM_ARRIVIUNG_MESSAGES 10
 
+#define MIN(x, y) (((x) < (y)) ? (x) : (y))
+
 int next_seq_num;
 int send_base;
+
+packet *send_buffer[MAX_SEQ_NUM];
 
 int seq_num_to_window_idx(int seq_num){
     return ((seq_num - 1) / RDT_PKTSIZE) % WINDOW_SIZE;
@@ -38,7 +43,7 @@ int seq_num_to_window_idx(int seq_num){
 void Sender_Init()
 {
     next_seq_num = INITIAL_SEQUENCE_NUMBER;
-    send_base = INITIAL_SEQUENCE_NUMBER;
+    send_base = INITIAL_SEND_BASE;
     fprintf(stdout, "At %.2fs: sender initializing ...\n", GetSimulationTime());
 }
 
@@ -49,6 +54,32 @@ void Sender_Init()
 void Sender_Final()
 {
     fprintf(stdout, "At %.2fs: sender finalizing ...\n", GetSimulationTime());
+
+    int i;
+    for (i = 0; i < MAX_SEQ_NUM; i++)
+        if (send_buffer[i] != NULL) 
+            free(send_buffer[i]);
+}
+
+packet *create_packet(int payload_size, int header_size, int seq_num, char *data){
+    packet *pkt = (packet*)malloc(sizeof(pkt));
+    pkt->data[0] = payload_size;
+    pkt->data[1] = seq_num;
+    memcpy(pkt->data+header_size, data, payload_size);
+
+    return pkt;
+
+}
+
+void transmit_n_packets(int n){
+    int i;
+    packet *pkt;
+
+    for (i = send_base; i < send_base + n; i++){
+        if ((pkt = send_buffer[i]) == NULL)
+            break;
+        Sender_ToLowerLayer(pkt);
+    }
 }
 
 /* event handler, called when a message is passed from the upper layer at the 
@@ -63,21 +94,19 @@ void Sender_FromUpperLayer(struct message *msg)
 
     /* split the message if it is too big */
 
-    /* reuse the same packet data structure */
-    packet pkt;
-
     /* the cursor always points to the first unsent byte in the message */
     int cursor = 0;
 
-    while (msg->size-cursor > maxpayload_size) {
-        /* fill in the packet */
-        pkt.data[0] = maxpayload_size;
-        pkt.data[1] = next_seq_num;
-        printf("sender --> sending seq_num: %d\n", next_seq_num);
-        memcpy(pkt.data+header_size, msg->data+cursor, maxpayload_size);
+    packet *pkt;
 
-        /* send it out through the lower layer */
-        Sender_ToLowerLayer(&pkt);
+    while (msg->size-cursor > maxpayload_size) {
+        /* create a packet */
+        printf("sender --> creating packet with seq_num: %d\n", next_seq_num);
+        pkt = create_packet(maxpayload_size, header_size, next_seq_num, msg->data+cursor);
+        printf("sender --> message content: %s\n", pkt->data);
+
+        /* add packet to buffer */
+        send_buffer[next_seq_num] = pkt;
 
         /* move the cursor */
         cursor += maxpayload_size;
@@ -89,31 +118,43 @@ void Sender_FromUpperLayer(struct message *msg)
 
     /* send out the last packet */
     if (msg->size > cursor) {
-        /* fill in the packet */
-        pkt.data[0] = msg->size-cursor;
-        pkt.data[1] = next_seq_num;
-        printf("sender --> sending seq_num: %d\n", next_seq_num);
-        memcpy(pkt.data+header_size, msg->data+cursor, pkt.data[0]);
+        /* create a packet */
+        printf("sender --> creating packet with seq_num: %d\n", next_seq_num);
+        pkt = create_packet(msg->size-cursor, header_size, next_seq_num, msg->data+cursor);
+        printf("sender --> message content: %s\n", pkt->data);
 
-        /* send it out through the lower layer */
-        Sender_ToLowerLayer(&pkt);
+        /* add packet to buffer */
+        send_buffer[next_seq_num] = pkt;
 
         /* move the seqence number */
         next_seq_num++;
         next_seq_num %= MAX_SEQ_NUM; 
     }
+
+    transmit_n_packets(WINDOW_SIZE);
+    printf("finished transmitting first set of packets\n");
 }
 
 /* event handler, called when a packet is passed from the lower layer at the 
    sender */
 void Sender_FromLowerLayer(struct packet *pkt)
 {
+    int i, diff;
     int ack_num = pkt->data[1];
 
     printf("sender --> received ack_num: %d\n", ack_num);
 
-    if (ack_num != send_base)
+    if (ack_num > send_base || (ack_num + 10 > (send_base+10) % MAX_SEQ_NUM)){
+        for (i = send_base; i < ack_num; i++){
+            free(send_buffer[i]);
+            send_buffer[i] = NULL;
+        }
+        diff = MIN(ack_num - send_base, (ack_num + 10) - ((send_base+10) % MAX_SEQ_NUM));
+
         send_base = ack_num;
+
+        transmit_n_packets(diff);
+    }
 
     printf("sender --> incremented send_base: %d\n", send_base);
 }
