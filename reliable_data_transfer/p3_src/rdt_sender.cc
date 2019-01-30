@@ -115,6 +115,10 @@ void Sender_FromUpperLayer(struct message *msg)
         pkt = create_packet(maxpayload_size, header_size, next_seq_num, msg->data+cursor);
 
         /* add packet to buffer */
+        if (send_buffer[next_seq_num] != NULL){
+            puts("About to overwrite a packet!");
+            exit(1);
+        }
         send_buffer[next_seq_num] = pkt;
 
         /* move the cursor */
@@ -133,6 +137,10 @@ void Sender_FromUpperLayer(struct message *msg)
         printf("sender --> message content: %s\n", pkt->data);
 
         /* add packet to buffer */
+        if (send_buffer[next_seq_num] != NULL){
+            puts("About to overwrite a packet!");
+            exit(1);
+        }
         send_buffer[next_seq_num] = pkt;
 
         /* move the seqence number */
@@ -140,7 +148,7 @@ void Sender_FromUpperLayer(struct message *msg)
         next_seq_num %= MAX_SEQ_NUM; 
     }
 
-    transmit_n_packets(1);
+    transmit_n_packets(WINDOW_SIZE);
     printf("finished transmitting first set of packets\n");
 }
 
