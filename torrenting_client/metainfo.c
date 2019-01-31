@@ -19,7 +19,6 @@ int _get_file_length(char *filepath){
     return (int) buf.st_size;
 }
 
-
 int _index_of_key(be_node *node, char *key){
     int i;
 
@@ -30,16 +29,22 @@ int _index_of_key(be_node *node, char *key){
     return -1;
 }
 
+char *_get_announce_url(){
+    int idx;
+
+    idx = _index_of_key(metainfo, "announce");
+
+    return metainfo->val.d[idx].val->val.s;
+}
+
 be_node *get_info_node(){
     int idx;
     be_dict *metainfo_dict;
-    size_t val_size;
     be_node *info_node;
 
     idx = _index_of_key(metainfo, "info");
 
     metainfo_dict= metainfo->val.d;
-    val_size = sizeof metainfo_dict;
 
     info_node = metainfo_dict[idx].val;
 
@@ -91,7 +96,7 @@ int print_metainfo(){
     char *port = "8000";
     char *peer_id = "bcd914c766d969a772823815fdc2737b2c8384bf";
     char *info_hash = "4a060f199e5dc28ff2c3294f34561e2da423bf0b"; // calculated from metainfo
-    char *announce_url = "http://192.168.0.1:9999/announce";
+    char *announce_url;
 
     char *piece_hashes[] = {
 		"064b493d90b6811f22e0457aa7f50e9c70b84285",
@@ -105,6 +110,7 @@ int print_metainfo(){
     file_name = _get_info_node_str("name");
     piece_length = _get_info_node_int("piece length");
     _write_file_size_str(file_size);
+    announce_url = _get_announce_url(); 
 
 
     printf("\tIP/portt          : %s/%s\n", ip, port);
