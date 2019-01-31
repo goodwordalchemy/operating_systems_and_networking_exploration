@@ -70,7 +70,7 @@ int main(int argc, char *argv[]) {
 
     rc = repl();
 
-    free(metainfo);
+    be_free(metainfo);
 
     return rc;
 }
