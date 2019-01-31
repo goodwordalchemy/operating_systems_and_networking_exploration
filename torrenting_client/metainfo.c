@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -16,12 +17,54 @@ int _get_file_length(char *filepath){
     return (int) buf.st_size;
 }
 
+
+int _index_of_key(be_node *node, char *key){
+    int i;
+
+    for (i = 0; node->val.d[i].val; ++i) {
+        if (!strcmp(node->val.d[i].key, key))
+            return i;
+    }
+    return -1;
+}
+
+be_node *get_info_node(){
+    int idx;
+    be_dict *metainfo_dict;
+    size_t val_size;
+    be_node *info_node;
+
+    idx = _index_of_key(metainfo, "info");
+
+    metainfo_dict= metainfo->val.d;
+    val_size = sizeof metainfo_dict;
+
+    info_node = metainfo_dict[idx].val;
+
+    return info_node;
+}
+
+char *_get_recommended_filename(){
+    int idx;
+    be_node *info_node;
+    char *filename;
+
+
+    info_node = get_info_node();
+    idx = _index_of_key(info_node, "name");
+
+
+    filename = info_node->val.d[idx].val->val.s;
+
+    return filename;
+}
+
 int print_metainfo(){
     char *ip = "127.0.0.1";
     char *port = "8000";
     char *peer_id = "bcd914c766d969a772823815fdc2737b2c8384bf";
     char *info_hash = "4a060f199e5dc28ff2c3294f34561e2da423bf0b"; // calculated from metainfo
-    char *file_name = "lovely_photo.jpg"; // in metainfo ...
+    char *file_name; // in metainfo ...
     char *piece_length = "262144";
     char *file_size = "1007616 (3 * [piece length] + 221184)"; 
     char *announce_url = "http://192.168.0.1:9999/announce";
@@ -35,18 +78,19 @@ int print_metainfo(){
 	int n_pieces = 4;
     int i;
     
+    file_name = _get_recommended_filename();
 
 
-    printf("\tIP/port\t\t\t\t : %s/%s\n", ip, port);
-    printf("\tID\t\t\t\t\t: %s\n", peer_id);
-    printf("\tmetainfo file\t\t\t\t: %s\n", metainfo_filename);
-    printf("\tinfo hash\t\t\t\t: %s\n", info_hash);
-    printf("\tfile name\t\t\t\t: %s\n", file_name);
-    printf("\tpiece length\t\t\t : %s\n", piece_length);
-    printf("\tfile size\t\t\t\t: %s\n", file_size);
-    printf("\tannounce URL\t\t\t\t: %s\n", announce_url);
+    printf("\tIP/portt          : %s/%s\n", ip, port);
+    printf("\tID                : %s\n", peer_id);
+    printf("\tmetainfo file     : %s\n", metainfo_filename);
+    printf("\tinfo hash         : %s\n", info_hash);
+    printf("\tfile nam          : %s\n", file_name);
+    printf("\tpiece length      : %s\n", piece_length);
+    printf("\tfile size         : %s\n", file_size);
+    printf("\tannounce URL      : %s\n", announce_url);
 
-    printf("\tpiece hashes\t\t\t\t:\n");
+    printf("\tpiece hashes      :\n");
     for (i = 0; i < n_pieces; i++)
         printf("\t\t%d %s\n", i, piece_hashes[i]);
 
@@ -79,7 +123,7 @@ int populate_metainfo(){
         return 1;
     }
 
-    if ((metainfo = be_decoden(buffer, length)) == NULL){
+    if ((metainfo = be_decoden(buffer, 2*length)) == NULL){
         fprintf(stderr, "Could not decode metainfo file\n");
     };
     
