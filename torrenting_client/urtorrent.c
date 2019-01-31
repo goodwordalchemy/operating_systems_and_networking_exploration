@@ -54,6 +54,8 @@ int repl(){
 }
 
 int main(int argc, char *argv[]) {
+    int rc;
+
     if (argc != 3){
         printf("URTorrent: a simple torrenting client\n\n"
                "Usage: urtorrent <port> <torrent_file>\n\n");
@@ -66,5 +68,9 @@ int main(int argc, char *argv[]) {
     puts("Populating metainfo...");
     populate_metainfo();
 
-    return repl();
+    rc = repl();
+
+    free(metainfo);
+
+    return rc;
 }

@@ -1,3 +1,5 @@
+#include <math.h>
+#include <openssl/sha.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -86,45 +88,83 @@ void _write_file_size_str(char *buf){
              file_length,quotient, remainder); 
 }
 
+void _free_hash_pieces_array(char **hpa, int size){
+    int i;
+
+    for (i = 0; i < size; i++)
+        free(hpa[i]);
+
+    free(hpa);
+}
+
+char **_get_piece_hashes_array(int n_pieces){
+    int i, j;
+    char *pieces;
+    char **piece_hashes;
+    char *buffer;
+
+    pieces = _get_info_node_str("pieces");
+    piece_hashes = malloc(sizeof(char*) * n_pieces);
+
+    for (i = 0; i < n_pieces; i++){
+        buffer = malloc(sizeof(char) * SHA_DIGEST_LENGTH*2 + 1);
+       
+        for (j = 0; j < SHA_DIGEST_LENGTH; j++){
+            snprintf(buffer + (j*2), 3, "%02x",
+                     128 + *(pieces + (i*SHA_DIGEST_LENGTH) + j));
+        }
+
+        piece_hashes[i] = buffer;
+    }
+
+    return piece_hashes;
+}
+
 int print_metainfo(){
+    int i;
     int piece_length;
+    int file_length;
+	int n_pieces;
+    int last_piece_size;
+
+    char *announce_url;
     char *file_name; // in metainfo ...
-    char file_size[FILE_SIZE_BUFLEN];
+    char file_size_str[FILE_SIZE_BUFLEN];
 
     // To do:
     char *ip = "127.0.0.1";
     char *port = "8000";
     char *peer_id = "bcd914c766d969a772823815fdc2737b2c8384bf";
     char *info_hash = "4a060f199e5dc28ff2c3294f34561e2da423bf0b"; // calculated from metainfo
-    char *announce_url;
 
-    char *piece_hashes[] = {
-		"064b493d90b6811f22e0457aa7f50e9c70b84285",
-		"d17cb90e50ca06a651a84f88fde0ecfb22a90cca",
-		"20e82d045341032645ebe27eed38103329281175",
-		"568c8a0599a7c1e2b3c70d8b8c960134653d497a"
-	};
-	int n_pieces = 4;
-    int i;
+    char **piece_hashes;
     
     file_name = _get_info_node_str("name");
-    piece_length = _get_info_node_int("piece length");
-    _write_file_size_str(file_size);
     announce_url = _get_announce_url(); 
+    piece_length = _get_info_node_int("piece length");
+    
+    file_length = _get_info_node_int("length");
+    n_pieces = ceil(file_length / piece_length);
+    last_piece_size = file_length % piece_length;
+    snprintf(file_size_str, FILE_SIZE_BUFLEN, "%d (%d * [piece length] + %d)", 
+             file_length, n_pieces, last_piece_size); 
 
+    piece_hashes = _get_piece_hashes_array(n_pieces);
 
-    printf("\tIP/portt          : %s/%s\n", ip, port);
+    printf("\tIP/port           : %s:%s\n", ip, port);
     printf("\tID                : %s\n", peer_id);
     printf("\tmetainfo file     : %s\n", metainfo_filename);
     printf("\tinfo hash         : %s\n", info_hash);
-    printf("\tfile nam          : %s\n", file_name);
+    printf("\tfile name         : %s\n", file_name);
     printf("\tpiece length      : %d\n", piece_length);
-    printf("\tfile size         : %s\n", file_size);
+    printf("\tfile size         : %s\n", file_size_str);
     printf("\tannounce URL      : %s\n", announce_url);
 
     printf("\tpiece hashes      :\n");
     for (i = 0; i < n_pieces; i++)
-        printf("\t\t%d %s\n", i, piece_hashes[i]);
+        printf("\t\t%2d\t%s\n", i, piece_hashes[i]);
+
+    _free_hash_pieces_array(piece_hashes, n_pieces);
 
     return 0;
 }
