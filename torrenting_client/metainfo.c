@@ -6,20 +6,11 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include "filestring.h"
 #include "metainfo.h"
 
 #define FILE_SIZE_BUFLEN 50
 
-int _get_file_length(char *filepath){
-    struct stat buf;
-
-    if (stat(filepath, &buf) == -1){
-        perror("stat");
-        return -1;
-    }
-
-    return (int) buf.st_size;
-}
 
 int _index_of_key(be_node *node, char *key){
     int i;
@@ -106,8 +97,8 @@ void _hex_digest(char *hash, char *buffer){
     }
 }
 
-void _get_metainfo_hash(char *buffer){
-    
+char* _get_metainfo_hash(char *metadata_buffer){
+    return NULL;
 }
 
 char **_get_piece_hashes_array(int n_pieces){
@@ -179,42 +170,17 @@ int print_metainfo(){
     return 0;
 }
 
+
 int populate_metainfo(){
-    int length;
-    char *buffer;
-    FILE *f;
+    filestring_t *fs;
     
-    if ((length = _get_file_length(metainfo_filename)) < 1){
-        fprintf(stderr, "There was an error finding the torrent file you've requested\n");
-        return 1;
-    }
+    fs = read_file_to_string(metainfo_filename);
 
-    buffer = malloc(length);
-    if (buffer == NULL){
-        perror("malloc");
-        return 1;
-    }
-
-    if ((f = fopen(metainfo_filename, "r")) == NULL){
-        perror("fopen");
-        return 1;
-    }
-
-    if ((fread(buffer, length, 1, f)) == 0){
-        perror("fread");
-        return 1;
-    }
-
-    if ((metainfo = be_decoden(buffer, 2*length)) == NULL){
+    if ((metainfo = be_decoden(fs->data, 2*(fs->length))) == NULL){
         fprintf(stderr, "Could not decode metainfo file\n");
     };
     
-    if (fclose(f) == EOF){
-        perror("fclose");
-        return 1;
-    }
-
-    free(buffer);
+    free_filestring(fs);
 
     return 0;
 }
