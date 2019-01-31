@@ -9,8 +9,11 @@ urtorrent.o: urtorrent.c
 bencode.o: bencode/bencode.c bencode/bencode.h
 	$(CC) $(CFLAGS) -c bencode/bencode.c
 
-urtorrent: urtorrent.o bencode.o
-	$(CC) $(CFLAGS) -o urtorrent urtorrent.o bencode.o
+metainfo.o: metainfo.c metainfo.h bencode.o
+	$(CC) $(CFLAGS) -c metainfo.c
+
+urtorrent: urtorrent.o bencode.o metainfo.c
+	$(CC) $(CFLAGS) -o urtorrent urtorrent.o bencode.o metainfo.c
 
 .PHONY: clean
 
