@@ -97,8 +97,21 @@ void _free_hash_pieces_array(char **hpa, int size){
     free(hpa);
 }
 
+void _hex_digest(char *hash, char *buffer){
+    int j;
+
+    for (j = 0; j < SHA_DIGEST_LENGTH; j++){
+        snprintf(buffer + (j*2), 3,
+                "%02x", 128 + *(hash + j));
+    }
+}
+
+void _get_metainfo_hash(char *buffer){
+    
+}
+
 char **_get_piece_hashes_array(int n_pieces){
-    int i, j;
+    int i;
     char *pieces;
     char **piece_hashes;
     char *buffer;
@@ -108,11 +121,8 @@ char **_get_piece_hashes_array(int n_pieces){
 
     for (i = 0; i < n_pieces; i++){
         buffer = malloc(sizeof(char) * SHA_DIGEST_LENGTH*2 + 1);
-       
-        for (j = 0; j < SHA_DIGEST_LENGTH; j++){
-            snprintf(buffer + (j*2), 3, "%02x",
-                     128 + *(pieces + (i*SHA_DIGEST_LENGTH) + j));
-        }
+
+        _hex_digest(pieces + (i * SHA_DIGEST_LENGTH), buffer);
 
         piece_hashes[i] = buffer;
     }
@@ -151,7 +161,7 @@ int print_metainfo(){
 
     piece_hashes = _get_piece_hashes_array(n_pieces);
 
-    printf("\tIP/port           : %s:%s\n", ip, port);
+    printf("\tIP:port           : %s:%s\n", ip, port);
     printf("\tID                : %s\n", peer_id);
     printf("\tmetainfo file     : %s\n", metainfo_filename);
     printf("\tinfo hash         : %s\n", info_hash);
