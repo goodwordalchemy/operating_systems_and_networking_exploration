@@ -87,16 +87,16 @@ int populate_metainfo(){
         return 1;
     }
 
-    if ((metainfo = be_decode(buffer)) == NULL){
+    if ((metainfo = be_decoden(buffer, length)) == NULL){
         fprintf(stderr, "Could not decode metainfo file\n");
     };
     
-    printf("%s", buffer);
-
     if (fclose(f) == EOF){
         perror("fclose");
         return 1;
     }
+
+    free(buffer);
 
     return 0;
 }
@@ -151,6 +151,9 @@ int main(int argc, char *argv[]) {
 
     client_port = argv[1];
     metainfo_filename = argv[2];
+
+    puts("Populating metainfo...");
+    populate_metainfo();
 
     return repl();
 }
