@@ -44,17 +44,20 @@ be_node *get_info_node(){
     return info_node;
 }
 
-char *_get_recommended_filename(){
+char *get_info_node_str(char *key){
     int idx;
     be_node *info_node;
-    char *filename;
-
 
     info_node = get_info_node();
-    idx = _index_of_key(info_node, "name");
+    idx = _index_of_key(info_node, key);
 
+    return info_node->val.d[idx].val->val.s;
+}
 
-    filename = info_node->val.d[idx].val->val.s;
+char *_get_recommended_filename(){
+    char *filename;
+
+    filename = get_info_node_str("name");
 
     return filename;
 }
