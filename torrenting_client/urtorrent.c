@@ -1,8 +1,63 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+#include "bencode/bencode.h"
 
 #define REPL_BUFSIZE 255
+
+char *metainfo_filename;
+char *client_port;
+
+int _get_file_length(char *filepath){
+    struct stat buf;
+
+    if (stat(filepath, &buf) == -1){
+        perror("stat");
+        return -1;
+    }
+
+    return (int) buf.st_size;
+}
+
+int metainfo(){
+    int length;
+    char *buffer;
+    FILE *f;
+    
+    if ((length = _get_file_length(metainfo_filename)) < 1){
+        fprintf(stderr, "There was an error finding the torrent file you've requested");
+        return 1;
+    }
+
+    buffer = malloc(length);
+    if (buffer == NULL){
+        perror("malloc");
+        return 1;
+    }
+
+    if ((f = fopen(metainfo_filename, "r")) == NULL){
+        perror("fopen");
+        return 1;
+    }
+
+    if ((fread(buffer, length, 1, f)) == 0){
+        perror("fread");
+        return 1;
+    }
+    
+    printf("%s", buffer);
+
+    if (fclose(f) == EOF){
+        perror("fclose");
+        return 1;
+    }
+
+    return 0;
+}
 
 int repl(){
     int i;
@@ -24,7 +79,7 @@ int repl(){
             return 0;
 
         else if (!strcmp(input_buffer, "metainfo"))
-            puts("metainfo not implemented yet");
+            metainfo();
 
         else if (!strcmp(input_buffer, "announce"))
             puts("announce not implemented yet");
@@ -51,6 +106,9 @@ int main(int argc, char *argv[]) {
                "Usage: urtorrent <port> <torrent_file>\n\n");
         exit(0);
     }
+
+    client_port = argv[1];
+    metainfo_filename = argv[2];
 
     return repl();
 }
