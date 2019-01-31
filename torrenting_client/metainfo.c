@@ -6,6 +6,8 @@
 
 #include "metainfo.h"
 
+#define FILE_SIZE_BUFLEN 50
+
 int _get_file_length(char *filepath){
     struct stat buf;
 
@@ -44,7 +46,19 @@ be_node *get_info_node(){
     return info_node;
 }
 
-char *get_info_node_str(char *key){
+int _get_info_node_int(char *key){
+    int idx, res;
+    be_node *info_node;
+
+    info_node = get_info_node();
+    idx = _index_of_key(info_node, key);
+
+    res = (int) info_node->val.d[idx].val->val.i;
+
+    return res;
+}
+
+char *_get_info_node_str(char *key){
     int idx;
     be_node *info_node;
 
@@ -54,22 +68,29 @@ char *get_info_node_str(char *key){
     return info_node->val.d[idx].val->val.s;
 }
 
-char *_get_recommended_filename(){
-    char *filename;
+void _write_file_size_str(char *buf){
+    int quotient, file_length, piece_length, remainder;
 
-    filename = get_info_node_str("name");
+    file_length = _get_info_node_int("length");
+    piece_length = _get_info_node_int("piece length");
 
-    return filename;
+    quotient = file_length / piece_length;
+    remainder = file_length % piece_length;
+
+    snprintf(buf, FILE_SIZE_BUFLEN, "%d (%d * [piece length] + %d)", 
+             file_length,quotient, remainder); 
 }
 
 int print_metainfo(){
+    int piece_length;
+    char *file_name; // in metainfo ...
+    char file_size[FILE_SIZE_BUFLEN];
+
+    // To do:
     char *ip = "127.0.0.1";
     char *port = "8000";
     char *peer_id = "bcd914c766d969a772823815fdc2737b2c8384bf";
     char *info_hash = "4a060f199e5dc28ff2c3294f34561e2da423bf0b"; // calculated from metainfo
-    char *file_name; // in metainfo ...
-    char *piece_length = "262144";
-    char *file_size = "1007616 (3 * [piece length] + 221184)"; 
     char *announce_url = "http://192.168.0.1:9999/announce";
 
     char *piece_hashes[] = {
@@ -81,7 +102,9 @@ int print_metainfo(){
 	int n_pieces = 4;
     int i;
     
-    file_name = _get_recommended_filename();
+    file_name = _get_info_node_str("name");
+    piece_length = _get_info_node_int("piece length");
+    _write_file_size_str(file_size);
 
 
     printf("\tIP/portt          : %s/%s\n", ip, port);
@@ -89,7 +112,7 @@ int print_metainfo(){
     printf("\tmetainfo file     : %s\n", metainfo_filename);
     printf("\tinfo hash         : %s\n", info_hash);
     printf("\tfile nam          : %s\n", file_name);
-    printf("\tpiece length      : %s\n", piece_length);
+    printf("\tpiece length      : %d\n", piece_length);
     printf("\tfile size         : %s\n", file_size);
     printf("\tannounce URL      : %s\n", announce_url);
 
