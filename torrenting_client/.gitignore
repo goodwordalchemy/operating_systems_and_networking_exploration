@@ -1,5 +1,5 @@
 **/*.o
 **/__pycache__
-lovely_photo.jpg
-lovely_photo.jpg.torrent
+*.jpg
+*.torrent
 urtorrent
