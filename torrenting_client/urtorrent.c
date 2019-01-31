@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #define REPL_BUFSIZE 255
@@ -14,8 +15,12 @@ int repl(){
             perror("fgets");
             return 1;
         }
+        input_buffer[strcspn(input_buffer, "\n")] = 0;
 
-        if (!strcmp(input_buffer, "quit"))
+        if (!strlen(input_buffer))
+            continue;
+
+        else if (!strcmp(input_buffer, "quit"))
             return 0;
 
         else if (!strcmp(input_buffer, "metainfo"))
@@ -41,9 +46,11 @@ int repl(){
 }
 
 int main(int argc, char *argv[]) {
-    if (argc != 3)
+    if (argc != 3){
         printf("URTorrent: a simple torrenting client\n\n"
-               "Usage: urtorrent <port> <torrent_file>\n");
+               "Usage: urtorrent <port> <torrent_file>\n\n");
+        exit(0);
+    }
 
     return repl();
 }
