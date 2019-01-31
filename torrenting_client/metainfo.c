@@ -110,19 +110,14 @@ char* _get_metainfo_hash(char *metadata_buffer){
     }
     substr += strlen("4:info");
 
-    puts("experiment----------------->\n");
-    printf("substr: %s\n", substr);
-    substr[4] = 'z';
-    printf("substr: %s\n", substr);
-    printf("fs->data: %s\n", fs->data);
-    puts("experiment----------------->\n");
 
-    substr[strlen(substr)-1] = 0;
-    substr[strlen(substr)-2] = 0;
-
-    printf("%s \n----\n %s\n", substr, fs->data);
-
-    SHA1((unsigned char*) substr, sizeof(substr) - 1, hash);
+    // -3 because -1 for null and -2 for e's at end of info dict.
+    // another way to do this is commented out below.
+    // Note that this other way is also fine because the string
+    // they are modifying is about to be freed.
+    /* substr[strlen(substr)-1] = 0; */
+    /* substr[strlen(substr)-2] = 0; */
+    SHA1((unsigned char*) substr, sizeof(substr) - 3, hash); 
 
     printf("the hash: %s\n", hash);
 
