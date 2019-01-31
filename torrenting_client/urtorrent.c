@@ -11,6 +11,7 @@
 
 char *metainfo_filename;
 char *client_port;
+be_node *metainfo;
 
 int _get_file_length(char *filepath){
     struct stat buf;
@@ -23,13 +24,18 @@ int _get_file_length(char *filepath){
     return (int) buf.st_size;
 }
 
-int metainfo(){
+int print_metainfo(){
+    puts("this is not implemented yet");
+    return 0;
+}
+
+int populate_metainfo(){
     int length;
     char *buffer;
     FILE *f;
     
     if ((length = _get_file_length(metainfo_filename)) < 1){
-        fprintf(stderr, "There was an error finding the torrent file you've requested");
+        fprintf(stderr, "There was an error finding the torrent file you've requested\n");
         return 1;
     }
 
@@ -48,6 +54,10 @@ int metainfo(){
         perror("fread");
         return 1;
     }
+
+    if ((metainfo = be_decode(buffer)) == NULL){
+        fprintf(stderr, "Could not decode metainfo file\n");
+    };
     
     printf("%s", buffer);
 
@@ -79,7 +89,7 @@ int repl(){
             return 0;
 
         else if (!strcmp(input_buffer, "metainfo"))
-            metainfo();
+            print_metainfo();
 
         else if (!strcmp(input_buffer, "announce"))
             puts("announce not implemented yet");
