@@ -98,6 +98,38 @@ void _hex_digest(char *hash, char *buffer){
 }
 
 char* _get_metainfo_hash(char *metadata_buffer){
+    char *substr;
+    unsigned char hash[SHA_DIGEST_LENGTH];
+    filestring_t *fs;
+
+    fs = read_file_to_string(metainfo_filename);
+
+    if ((substr = strstr(fs->data, "4:info")) == NULL){
+        fprintf(stderr, "Could not find info dictionary in metafile");
+        return NULL;
+    }
+    substr += strlen("4:info");
+
+    puts("experiment----------------->\n");
+    printf("substr: %s\n", substr);
+    substr[4] = 'z';
+    printf("substr: %s\n", substr);
+    printf("fs->data: %s\n", fs->data);
+    puts("experiment----------------->\n");
+
+    substr[strlen(substr)-1] = 0;
+    substr[strlen(substr)-2] = 0;
+
+    printf("%s \n----\n %s\n", substr, fs->data);
+
+    SHA1((unsigned char*) substr, sizeof(substr) - 1, hash);
+
+    printf("the hash: %s\n", hash);
+
+    _hex_digest((char *) hash, metadata_buffer);
+    
+    free_filestring(fs);
+
     return NULL;
 }
 
@@ -131,12 +163,12 @@ int print_metainfo(){
     char *announce_url;
     char *file_name; // in metainfo ...
     char file_size_str[FILE_SIZE_BUFLEN];
+    char info_hash[40];
 
     // To do:
     char *ip = "127.0.0.1";
     char *port = "8000";
     char *peer_id = "bcd914c766d969a772823815fdc2737b2c8384bf";
-    char *info_hash = "4a060f199e5dc28ff2c3294f34561e2da423bf0b"; // calculated from metainfo
 
     char **piece_hashes;
     
@@ -151,6 +183,7 @@ int print_metainfo(){
              file_length, n_pieces, last_piece_size); 
 
     piece_hashes = _get_piece_hashes_array(n_pieces);
+    _get_metainfo_hash(info_hash);
 
     printf("\tIP:port           : %s:%s\n", ip, port);
     printf("\tID                : %s\n", peer_id);
