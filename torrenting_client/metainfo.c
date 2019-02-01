@@ -269,16 +269,12 @@ void populate_localstate_metainfo(){
 
     _get_infodict_hash(localstate.info_hash);
     _get_infodict_digest(localstate.info_hash_digest);
-    printf("DEBUG:just after assignment: info hash digewt: %s\n", localstate.info_hash_digest);
 
     get_local_ip_address(localstate.ip, IP_BUFLEN); 
-    printf("DEBUG: maybe something about callstack: info hash digewt: %s\n", localstate.info_hash_digest);
     _get_peer_id(localstate.peer_id);
-    printf("DEBUG: maybe something about callstack: info hash digewt: %s\n", localstate.info_hash_digest);
 }
 
 void setup_metainfo(){
     populate_metainfo();
     populate_localstate_metainfo();
-    printf("DEBUG: populate exits: info hash digewt: %s\n", localstate.info_hash_digest);
 }
