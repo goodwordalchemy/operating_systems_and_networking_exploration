@@ -7,9 +7,11 @@
 #include <sys/stat.h>
 
 #include "filestring.h"
+#include "ip_address.h"
 #include "metainfo.h"
 
 #define FILE_SIZE_BUFLEN 50
+#define IP_BUFLEN 17
 
 
 int _index_of_key(be_node *node, char *key){
@@ -159,10 +161,9 @@ int print_metainfo(){
     char *file_name; // in metainfo ...
     char file_size_str[FILE_SIZE_BUFLEN];
     char info_hash[40];
+    char ip[IP_BUFLEN];
 
     // To do:
-    char *ip = "127.0.0.1";
-    char *port = "8000";
     char *peer_id = "bcd914c766d969a772823815fdc2737b2c8384bf";
 
     char **piece_hashes;
@@ -180,7 +181,9 @@ int print_metainfo(){
     piece_hashes = _get_piece_hashes_array(n_pieces);
     _get_metainfo_hash(info_hash);
 
-    printf("\tIP:port           : %s:%s\n", ip, port);
+    get_local_ip_address(ip, IP_BUFLEN); 
+
+    printf("\tIP:port           : %s:%s\n", ip, client_port);
     printf("\tID                : %s\n", peer_id);
     printf("\tmetainfo file     : %s\n", metainfo_filename);
     printf("\tinfo hash         : %s\n", info_hash);

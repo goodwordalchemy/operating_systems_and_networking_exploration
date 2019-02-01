@@ -13,11 +13,14 @@ bencode.o: bencode/bencode.c bencode/bencode.h
 filestring.o: filestring.c filestring.h
 	$(CC) $(CFLAGS) -c filestring.c
 
-metainfo.o: metainfo.c metainfo.h bencode.o filestring.o
+metainfo.o: metainfo.c metainfo.h
 	$(CC) $(CFLAGS) -c metainfo.c
 
-urtorrent: urtorrent.o bencode.o metainfo.c filestring.o
-	$(CC) $(CFLAGS) $(LDFLAGS) -lcrypto -o urtorrent urtorrent.o bencode.o metainfo.c filestring.o
+ip_address.o: ip_address.c ip_address.h
+	$(CC) $(CFLAGS) -c ip_address.c
+
+urtorrent: urtorrent.o bencode/bencode.o metainfo.o filestring.o ip_address.o
+	$(CC) $(CFLAGS) $(LDFLAGS) -lcrypto -o urtorrent urtorrent.o bencode/bencode.o metainfo.o filestring.o ip_address.o
 
 .PHONY: clean
 

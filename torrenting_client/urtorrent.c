@@ -9,8 +9,6 @@
 
 #define REPL_BUFSIZE 255
 
-char *metainfo_filename;
-char *client_port;
 
 int repl(){
     int i;
