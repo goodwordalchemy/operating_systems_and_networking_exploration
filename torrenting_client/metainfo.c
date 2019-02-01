@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include "state.h"
 #include "filestring.h"
 #include "ip_address.h"
 #include "metainfo.h"

@@ -8,17 +8,21 @@ CFLAGS=-Wall -g
 LDFLAGS=-L/usr/local/Cellar//openssl@1.1/1.1.0g/lib/\
 		-I/usr/local/Cellar//openssl@1.1/1.1.0g/
 
-DEPS=filestring.h\
+DEPS=announce.h\
+	 bencode/bencode.h\
+	 filestring.h\
 	 ip_address.h\
 	 metainfo.h\
-	 socket_helpers.h
+	 repl.h\
+	 state.h
 
-OBJS=urtorrent.o\
+OBJS=announce.o\
 	 bencode/bencode.o\
 	 filestring.o\
+	 ip_address.o\
 	 metainfo.o\
-	 ip_address.o
-
+	 repl.o\
+	 urtorrent.o\
 
 all: urtorrent
 
