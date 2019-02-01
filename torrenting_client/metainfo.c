@@ -174,6 +174,7 @@ char **_get_piece_hash_digests(){
 
 void _get_peer_id(char *buf){
     unsigned char hash[SHA_DIGEST_LENGTH];
+    char inter_buf[2*SHA_DIGEST_LENGTH + 1];
     char concat[IP_BUFLEN + PORT_BUFLEN]; 
 
     snprintf(concat, IP_BUFLEN + PORT_BUFLEN, "%s%s", 
@@ -182,9 +183,11 @@ void _get_peer_id(char *buf){
 
     SHA1((unsigned char*)concat, strlen(concat), hash); 
 
-    _hex_digest(hash, (char*)buf);
+    _hex_digest(hash, (char*)inter_buf);
 
-    /* buf[SHA_DIGEST_LENGTH] = 0; */
+    inter_buf[SHA_DIGEST_LENGTH] = 0;
+
+    memcpy(buf, inter_buf, SHA_DIGEST_LENGTH+1);
 }
 
 char *_get_recommended_filename(){

@@ -24,7 +24,7 @@ struct localstate_t {
     char *file_name;
     unsigned char info_hash[SHA_DIGEST_LENGTH + 1];
     char info_hash_digest[2*SHA_DIGEST_LENGTH + 1];
-    char peer_id[2*SHA_DIGEST_LENGTH + 1];
+    char peer_id[SHA_DIGEST_LENGTH + 1];
 
     unsigned char **piece_hashes;
     char **piece_hash_digests;

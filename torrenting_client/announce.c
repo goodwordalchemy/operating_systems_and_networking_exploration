@@ -83,6 +83,6 @@ void print_announce(){
 
     _get_response_from_tracker(announce_request, announce_response);
 
-    /* printf("announce request: %s\n", announce_request); */
+    printf("\n\nannounce request: %s\n\n", announce_request);
     printf("announce response: %s\n", announce_response);
 }
