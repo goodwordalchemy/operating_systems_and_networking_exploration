@@ -13,8 +13,6 @@
 #include "metainfo.h"
 
 #define FILE_SIZE_BUFLEN 50
-#define IP_BUFLEN 17
-#define PORT_BUFLEN 6
 
 int _index_of_key(be_node *node, char *key){
     int i;
@@ -76,11 +74,11 @@ void _write_file_size_str(char *buf){
     file_size = _get_info_node_int("length");
     piece_length = _get_info_node_int("piece length");
 
-    quotient = file_size / piece_length;
-    remainder = file_size % piece_length;
+    quotient = localstate.file_size / localstate.piece_length;
+    remainder = localstate.file_size % localstate.piece_length;
 
     snprintf(buf, FILE_SIZE_BUFLEN, "%d (%d * [piece length] + %d)", 
-             file_size,quotient, remainder); 
+             localstate.file_size, quotient, remainder); 
 }
 
 void _free_hash_pieces_array(char **hpa, int size){
@@ -109,11 +107,11 @@ void _hash_and_get_digest(unsigned char *str, int to_offset, char *buf){
     _hex_digest((char*)hash, (char*)buf);
 }
 
-char* _get_metainfo_hash(char *metadata_buffer){
+char *get_infodict_str(char *buffer){
     char *substr;
     filestring_t *fs;
 
-    fs = read_file_to_string(metainfo_filename);
+    fs = read_file_to_string(localstate.metainfo_filename);
 
     if ((substr = strstr(fs->data, "4:info")) == NULL){
         fprintf(stderr, "Could not find info dictionary in metafile");
@@ -121,12 +119,24 @@ char* _get_metainfo_hash(char *metadata_buffer){
     }
     substr += strlen("4:info");
 
-    // -3 because -1 for null and -2 for e's at end of info dict.
-    _hash_and_get_digest((unsigned char*)substr, sizeof(substr)-3, metadata_buffer);
+    // -2 for e's at end of info dict.
+    memcpy(buffer, substr, strlen(substr)-2);
     
     free_filestring(fs);
 
-    return NULL;
+    return buffer;
+}
+
+char* _get_infodict_digest(char *metadata_buffer){
+    // TODO get rid of VLA
+    int bufsize = get_file_length(localstate.metainfo_filename) - 8;
+    char infodict_str_buf[bufsize];
+
+    get_infodict_str(infodict_str_buf);
+
+    _hash_and_get_digest((unsigned char*)infodict_str_buf, bufsize, metadata_buffer);
+
+    return metadata_buffer;
 }
 
 char **_get_piece_hashes_array(int n_pieces){
@@ -150,14 +160,11 @@ char **_get_piece_hashes_array(int n_pieces){
 }
 
 void _get_peer_id(char *buf){
-   char ip[IP_BUFLEN];
-   char *port;
    char concat[IP_BUFLEN + PORT_BUFLEN]; 
 
-    get_local_ip_address(ip, IP_BUFLEN); 
-    port = client_port;
+   snprintf(concat, IP_BUFLEN + PORT_BUFLEN, "%s%s", 
+            localstate.ip, localstate.client_port);
 
-   snprintf(concat, IP_BUFLEN + PORT_BUFLEN, "%s%s", ip, port);
    _hash_and_get_digest((unsigned char*)concat, sizeof(concat)-1, buf);
 
 }
@@ -174,52 +181,25 @@ int _get_file_size(){
     return _get_info_node_int("length");
 }
 
+
 int print_metainfo(){
     int i;
-    int piece_length;
-    int file_size;
-	int n_pieces;
-    int last_piece_size;
-
-    char *announce_url;
-    char *file_name; // in metainfo ...
     char file_size_str[FILE_SIZE_BUFLEN];
-    char info_hash[2*FILE_SIZE_BUFLEN];
-    char ip[IP_BUFLEN];
-    char peer_id[2*FILE_SIZE_BUFLEN];
 
-    char **piece_hashes;
-    
-    file_name = _get_recommended_filename();
-    announce_url = _get_announce_url(); 
-    piece_length = _get_piece_length();
-    
-    file_size = _get_file_size();
-    n_pieces = ceil(file_size / piece_length);
-    last_piece_size = file_size % piece_length;
-    snprintf(file_size_str, FILE_SIZE_BUFLEN, "%d (%d * [piece length] + %d)", 
-             file_size, n_pieces, last_piece_size); 
+    _write_file_size_str(file_size_str);
 
-    piece_hashes = _get_piece_hashes_array(n_pieces);
-    _get_metainfo_hash(info_hash);
-
-    get_local_ip_address(ip, IP_BUFLEN); 
-    _get_peer_id(peer_id);
-
-    printf("\tIP:port           : %s:%s\n", ip, client_port);
-    printf("\tID                : %s\n", peer_id);
-    printf("\tmetainfo file     : %s\n", metainfo_filename);
-    printf("\tinfo hash         : %s\n", info_hash);
-    printf("\tfile name         : %s\n", file_name);
-    printf("\tpiece length      : %d\n", piece_length);
+    printf("\tIP:port           : %s:%s\n", localstate.ip, localstate.client_port);
+    printf("\tID                : %s\n", localstate.peer_id);
+    printf("\tmetainfo file     : %s\n", localstate.metainfo_filename);
+    printf("\tinfo hash         : %s\n", localstate.info_hash);
+    printf("\tfile name         : %s\n", localstate.file_name);
+    printf("\tpiece length      : %d\n", localstate.piece_length);
     printf("\tfile size         : %s\n", file_size_str);
-    printf("\tannounce URL      : %s\n", announce_url);
+    printf("\tannounce URL      : %s\n", localstate.announce_url);
 
     printf("\tpiece hashes      :\n");
-    for (i = 0; i < n_pieces; i++)
-        printf("\t\t%2d\t%s\n", i, piece_hashes[i]);
-
-    _free_hash_pieces_array(piece_hashes, n_pieces);
+    for (i = 0; i < localstate.n_pieces; i++)
+        printf("\t\t%2d\t%s\n", i, localstate.piece_hashes[i]);
 
     return 0;
 }
@@ -230,21 +210,21 @@ void _populate_is_seeder(){
 
     rec_filename = _get_recommended_filename();
     if (stat(rec_filename, &buf) == 0)
-        is_seeder = 1;
+        localstate.is_seeder = 1;
     else if (errno == ENOENT)
-        is_seeder = 0;
+        localstate.is_seeder = 0;
 
     else{
         perror("stat");
         fprintf(stderr, "Error: Could not determine if you are a seeder or leecher.\n");
-        is_seeder = 0;
+        localstate.is_seeder = 0;
     }
 }
 
 int populate_metainfo(){
     filestring_t *fs;
     
-    fs = read_file_to_string(metainfo_filename);
+    fs = read_file_to_string(localstate.metainfo_filename);
 
     if ((metainfo = be_decoden(fs->data, 2*(fs->length))) == NULL){
         fprintf(stderr, "Could not decode metainfo file\n");
@@ -252,8 +232,28 @@ int populate_metainfo(){
     
     free_filestring(fs);
 
-    _populate_is_seeder();
 
     return 0;
 }
 
+void populate_localstate_metainfo(){
+    _populate_is_seeder();
+    localstate.file_name = _get_recommended_filename();
+    localstate.announce_url = _get_announce_url(); 
+    localstate.piece_length = _get_piece_length();
+    
+    localstate.file_size = _get_file_size();
+    localstate.n_pieces = ceil(localstate.file_size / localstate.piece_length);
+    localstate.last_piece_size = localstate.file_size % localstate.piece_length;
+
+    localstate.piece_hashes = _get_piece_hashes_array(localstate.n_pieces);
+    _get_infodict_digest(localstate.info_hash_digest);
+
+    get_local_ip_address(localstate.ip, IP_BUFLEN); 
+    _get_peer_id(localstate.peer_id);
+}
+
+void setup_metainfo(){
+    populate_metainfo();
+    populate_localstate_metainfo();
+}

@@ -1,3 +1,3 @@
 int print_metainfo();
 
-int populate_metainfo();
+void setup_metainfo();

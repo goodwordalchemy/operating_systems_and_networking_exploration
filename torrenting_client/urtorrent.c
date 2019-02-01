@@ -18,11 +18,11 @@ int main(int argc, char *argv[]) {
         exit(0);
     }
 
-    client_port = argv[1];
-    metainfo_filename = argv[2];
+    localstate.client_port = argv[1];
+    localstate.metainfo_filename = argv[2];
 
-    puts("Populating metainfo...");
-    populate_metainfo();
+    puts("Setting up client state...");
+    setup_metainfo();
 
     rc = repl();
 

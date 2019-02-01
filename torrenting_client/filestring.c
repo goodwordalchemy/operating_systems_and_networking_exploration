@@ -5,7 +5,7 @@
 
 #include "filestring.h"
 
-int _get_file_length(char *filepath){
+int get_file_length(char *filepath){
     struct stat buf;
 
     if (stat(filepath, &buf) == -1){
@@ -22,7 +22,7 @@ filestring_t *read_file_to_string(char *filename){
     char *buffer;
     FILE *f;
     
-    if ((length = _get_file_length(filename)) < 1){
+    if ((length = get_file_length(filename)) < 1){
         fprintf(stderr, "There was an error finding the torrent file you've requested\n");
         return NULL;
     }
