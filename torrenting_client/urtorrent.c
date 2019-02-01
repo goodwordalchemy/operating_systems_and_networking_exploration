@@ -26,6 +26,7 @@ int main(int argc, char *argv[]) {
 
     rc = repl();
 
+    free_localstate_metainfo();
     be_free(metainfo);
 
     return rc;

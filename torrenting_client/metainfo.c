@@ -135,9 +135,7 @@ void _get_infodict_digest(char *digest_buf){
 
     _get_infodict_hash(hash_buf);
 
-    printf("about to digest infodict...\n");
     _hex_digest(hash_buf, digest_buf);
-    printf("digest buf: %s\n", digest_buf);
 }
 
 unsigned char **_get_piece_hashes(){
@@ -185,6 +183,8 @@ void _get_peer_id(char *buf){
     SHA1((unsigned char*)concat, strlen(concat), hash); 
 
     _hex_digest(hash, (char*)buf);
+
+    /* buf[SHA_DIGEST_LENGTH] = 0; */
 }
 
 char *_get_recommended_filename(){
@@ -277,4 +277,15 @@ void populate_localstate_metainfo(){
 void setup_metainfo(){
     populate_metainfo();
     populate_localstate_metainfo();
+}
+
+void free_localstate_metainfo(){
+    int i;
+
+    free(localstate.piece_hashes);
+
+    for (i = 0; i < localstate.n_pieces; i++)
+        free(localstate.piece_hash_digests[i]);
+
+    free(localstate.piece_hash_digests);
 }

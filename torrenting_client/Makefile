@@ -14,6 +14,7 @@ DEPS=announce.h\
 	 ip_address.h\
 	 metainfo.h\
 	 repl.h\
+	 socket_helpers.h\
 	 state.h
 
 OBJS=announce.o\
@@ -22,6 +23,7 @@ OBJS=announce.o\
 	 ip_address.o\
 	 metainfo.o\
 	 repl.o\
+	 socket_helpers.o\
 	 urtorrent.o\
 
 all: urtorrent

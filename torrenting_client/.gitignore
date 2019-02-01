@@ -4,4 +4,4 @@
 *.torrent
 urtorrent
 run.sh
-socket_helpers.c socket_helpers.h
+run-tracker.sh
