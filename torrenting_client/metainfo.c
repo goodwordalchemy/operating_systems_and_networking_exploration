@@ -99,9 +99,16 @@ void _hex_digest(char *hash, char *buffer){
     }
 }
 
+void _hash_and_get_digest(unsigned char *str, int to_offset, char *buf){
+    unsigned char hash[SHA_DIGEST_LENGTH];
+
+    SHA1(str, to_offset, hash); 
+
+    _hex_digest((char*)hash, (char*)buf);
+}
+
 char* _get_metainfo_hash(char *metadata_buffer){
     char *substr;
-    unsigned char hash[SHA_DIGEST_LENGTH];
     filestring_t *fs;
 
     fs = read_file_to_string(metainfo_filename);
@@ -112,18 +119,8 @@ char* _get_metainfo_hash(char *metadata_buffer){
     }
     substr += strlen("4:info");
 
-
     // -3 because -1 for null and -2 for e's at end of info dict.
-    // another way to do this is commented out below.
-    // Note that this other way is also fine because the string
-    // they are modifying is about to be freed.
-    /* substr[strlen(substr)-1] = 0; */
-    /* substr[strlen(substr)-2] = 0; */
-    SHA1((unsigned char*) substr, sizeof(substr) - 3, hash); 
-
-    printf("the hash: %s\n", hash);
-
-    _hex_digest((char *) hash, metadata_buffer);
+    _hash_and_get_digest((unsigned char*)substr, sizeof(substr)-3, metadata_buffer);
     
     free_filestring(fs);
 
@@ -150,6 +147,14 @@ char **_get_piece_hashes_array(int n_pieces){
     return piece_hashes;
 }
 
+void _get_peer_id(char *ip, char *port, char *buf){
+   char concat[IP_BUFLEN + 6]; 
+
+   snprintf(concat, IP_BUFLEN + 6, "%s%s", ip, port);
+   _hash_and_get_digest((unsigned char*)concat, sizeof(concat)-1, buf);
+
+}
+
 int print_metainfo(){
     int i;
     int piece_length;
@@ -160,11 +165,9 @@ int print_metainfo(){
     char *announce_url;
     char *file_name; // in metainfo ...
     char file_size_str[FILE_SIZE_BUFLEN];
-    char info_hash[40];
+    char info_hash[2*FILE_SIZE_BUFLEN];
     char ip[IP_BUFLEN];
-
-    // To do:
-    char *peer_id = "bcd914c766d969a772823815fdc2737b2c8384bf";
+    char peer_id[2*FILE_SIZE_BUFLEN];
 
     char **piece_hashes;
     
@@ -182,6 +185,7 @@ int print_metainfo(){
     _get_metainfo_hash(info_hash);
 
     get_local_ip_address(ip, IP_BUFLEN); 
+    _get_peer_id(ip, client_port, peer_id);
 
     printf("\tIP:port           : %s:%s\n", ip, client_port);
     printf("\tID                : %s\n", peer_id);
