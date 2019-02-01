@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <math.h>
 #include <openssl/sha.h>
 #include <stdio.h>
@@ -223,6 +224,22 @@ int print_metainfo(){
     return 0;
 }
 
+void _populate_is_seeder(){
+    char *rec_filename;
+    struct stat buf;
+
+    rec_filename = _get_recommended_filename();
+    if (stat(rec_filename, &buf) == 0)
+        is_seeder = 1;
+    else if (errno == ENOENT)
+        is_seeder = 0;
+
+    else{
+        perror("stat");
+        fprintf(stderr, "Error: Could not determine if you are a seeder or leecher.\n");
+        is_seeder = 0;
+    }
+}
 
 int populate_metainfo(){
     filestring_t *fs;
@@ -234,6 +251,8 @@ int populate_metainfo(){
     };
     
     free_filestring(fs);
+
+    _populate_is_seeder();
 
     return 0;
 }

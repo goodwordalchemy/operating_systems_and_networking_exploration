@@ -1,5 +1,7 @@
 #include <stdio.h>
 
+#include "state.h"
+
 void print_announce(){
-    printf("yeah bitches!\n");
+    printf("is a seeder? %d\n", is_seeder);
 }
