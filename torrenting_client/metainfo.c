@@ -13,7 +13,7 @@
 
 #define FILE_SIZE_BUFLEN 50
 #define IP_BUFLEN 17
-
+#define PORT_BUFLEN 6
 
 int _index_of_key(be_node *node, char *key){
     int i;
@@ -70,16 +70,16 @@ char *_get_info_node_str(char *key){
 }
 
 void _write_file_size_str(char *buf){
-    int quotient, file_length, piece_length, remainder;
+    int quotient, file_size, piece_length, remainder;
 
-    file_length = _get_info_node_int("length");
+    file_size = _get_info_node_int("length");
     piece_length = _get_info_node_int("piece length");
 
-    quotient = file_length / piece_length;
-    remainder = file_length % piece_length;
+    quotient = file_size / piece_length;
+    remainder = file_size % piece_length;
 
     snprintf(buf, FILE_SIZE_BUFLEN, "%d (%d * [piece length] + %d)", 
-             file_length,quotient, remainder); 
+             file_size,quotient, remainder); 
 }
 
 void _free_hash_pieces_array(char **hpa, int size){
@@ -148,18 +148,35 @@ char **_get_piece_hashes_array(int n_pieces){
     return piece_hashes;
 }
 
-void _get_peer_id(char *ip, char *port, char *buf){
-   char concat[IP_BUFLEN + 6]; 
+void _get_peer_id(char *buf){
+   char ip[IP_BUFLEN];
+   char *port;
+   char concat[IP_BUFLEN + PORT_BUFLEN]; 
 
-   snprintf(concat, IP_BUFLEN + 6, "%s%s", ip, port);
+    get_local_ip_address(ip, IP_BUFLEN); 
+    port = client_port;
+
+   snprintf(concat, IP_BUFLEN + PORT_BUFLEN, "%s%s", ip, port);
    _hash_and_get_digest((unsigned char*)concat, sizeof(concat)-1, buf);
 
+}
+
+char *_get_recommended_filename(){
+    return _get_info_node_str("name");
+}
+
+int _get_piece_length(){
+    return _get_info_node_int("piece length");
+}
+
+int _get_file_size(){
+    return _get_info_node_int("length");
 }
 
 int print_metainfo(){
     int i;
     int piece_length;
-    int file_length;
+    int file_size;
 	int n_pieces;
     int last_piece_size;
 
@@ -172,21 +189,21 @@ int print_metainfo(){
 
     char **piece_hashes;
     
-    file_name = _get_info_node_str("name");
+    file_name = _get_recommended_filename();
     announce_url = _get_announce_url(); 
-    piece_length = _get_info_node_int("piece length");
+    piece_length = _get_piece_length();
     
-    file_length = _get_info_node_int("length");
-    n_pieces = ceil(file_length / piece_length);
-    last_piece_size = file_length % piece_length;
+    file_size = _get_file_size();
+    n_pieces = ceil(file_size / piece_length);
+    last_piece_size = file_size % piece_length;
     snprintf(file_size_str, FILE_SIZE_BUFLEN, "%d (%d * [piece length] + %d)", 
-             file_length, n_pieces, last_piece_size); 
+             file_size, n_pieces, last_piece_size); 
 
     piece_hashes = _get_piece_hashes_array(n_pieces);
     _get_metainfo_hash(info_hash);
 
     get_local_ip_address(ip, IP_BUFLEN); 
-    _get_peer_id(ip, client_port, peer_id);
+    _get_peer_id(peer_id);
 
     printf("\tIP:port           : %s:%s\n", ip, client_port);
     printf("\tID                : %s\n", peer_id);
