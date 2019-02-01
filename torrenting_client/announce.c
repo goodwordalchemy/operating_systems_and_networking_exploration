@@ -1,14 +1,18 @@
 #include <ctype.h>
+#include <netdb.h>
 #include <stdio.h>
 #include <string.h>
 
 #include "state.h"
 #include "socket_helpers.h"
 
+#define COMPACT_PEER_FORMAT 0
+
 #define DATASIZE_BUFLEN 11 
 #define EVENT_BUFLEN 10
 #define REQUEST_BUFLEN 255
-#define RESPONSE_BUFLEN 8191
+#define RESPONSE_BUFLEN 8192
+
 
 int _encode_me(unsigned char l){
     int ans = 0;
@@ -51,24 +55,28 @@ void _get_request_string(char *buffer){
     snprintf(buffer, REQUEST_BUFLEN, 
             "GET /announce?info_hash=%s&"
             "peer_id=%s&port=%s&uploaded=0&downloaded=0&"
-            "left=%s&compact=1&event=started HTTP/1.1\r\n\r\n",
+            "left=%s&compact=%d&event=started HTTP/1.1\r\n\r\n",
             enc_info_hash, localstate.peer_id, localstate.client_port,
-            left_buf);
+            left_buf, COMPACT_PEER_FORMAT);
 }
+
+void _parse_tracker_response(const char *response){
+    
+}
+
 
 void _get_response_from_tracker(const char *request, char *response_buf){
     int sockfd;
     struct addrinfo *servinfo;
 
-    /* "http://127.0.0.1:6969/announce" */
-    char *announce_host = "127.0.0.1";
-    char *announce_port = "6969";
+    char *announce_host = localstate.announce_hostname;
+    char *announce_port = localstate.announce_port;
 
     servinfo  = get_address_info(announce_host, announce_port);
     sockfd = create_connected_socket(servinfo);
     freeaddrinfo(servinfo);
 
-    if (send_on_socket(sockfd, request, REQUEST_BUFLEN) == 0)
+    if (send_on_socket(sockfd, request, strlen(request)) == 0)
         fprintf(stderr, "Error: Could not send announce message to tracker.\n");
 
     if (receive_on_socket(sockfd, response_buf, RESPONSE_BUFLEN) == 0)

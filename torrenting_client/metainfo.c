@@ -11,6 +11,7 @@
 #include "filestring.h"
 #include "ip_address.h"
 #include "metainfo.h"
+#include "url_parse.h"
 
 #define FILE_SIZE_BUFLEN 50
 
@@ -261,8 +262,11 @@ void populate_localstate_metainfo(){
     _populate_is_seeder();
     localstate.file_name = _get_recommended_filename();
     localstate.announce_url = _get_announce_url(); 
-    localstate.piece_length = _get_piece_length();
+    extract_hostname_and_port(localstate.announce_hostname, 
+                              localstate.announce_port,
+                              localstate.announce_url);
     
+    localstate.piece_length = _get_piece_length();
     localstate.file_size = _get_file_size();
     localstate.n_pieces = ceil(localstate.file_size / localstate.piece_length);
     localstate.last_piece_size = localstate.file_size % localstate.piece_length;
@@ -275,6 +279,7 @@ void populate_localstate_metainfo(){
 
     get_local_ip_address(localstate.ip, IP_BUFLEN); 
     _get_peer_id(localstate.peer_id);
+
 }
 
 void setup_metainfo(){

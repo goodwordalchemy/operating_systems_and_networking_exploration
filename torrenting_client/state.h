@@ -2,6 +2,7 @@
 
 #include "bencode/bencode.h"
 
+#define HOSTNAME_BUFLEN 127
 #define IP_BUFLEN 17
 #define PORT_BUFLEN 6
 
@@ -21,6 +22,8 @@ struct localstate_t {
     int last_piece_size;
 
     char *announce_url;
+    char announce_hostname[HOSTNAME_BUFLEN];
+    char announce_port[PORT_BUFLEN];
     char *file_name;
     unsigned char info_hash[SHA_DIGEST_LENGTH + 1];
     char info_hash_digest[2*SHA_DIGEST_LENGTH + 1];

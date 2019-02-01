@@ -15,7 +15,8 @@ DEPS=announce.h\
 	 metainfo.h\
 	 repl.h\
 	 socket_helpers.h\
-	 state.h
+	 state.h\
+	 url_parse.h\
 
 OBJS=announce.o\
 	 bencode/bencode.o\
@@ -24,6 +25,7 @@ OBJS=announce.o\
 	 metainfo.o\
 	 repl.o\
 	 socket_helpers.o\
+	 url_parse.o\
 	 urtorrent.o\
 
 all: urtorrent
