@@ -22,11 +22,12 @@ struct localstate_t {
 
     char *announce_url;
     char *file_name;
-    char *info_hash;
-    char info_hash_digest[2*SHA_DIGEST_LENGTH];
-    char peer_id[2*SHA_DIGEST_LENGTH];
+    unsigned char info_hash[SHA_DIGEST_LENGTH + 1];
+    char info_hash_digest[2*SHA_DIGEST_LENGTH + 1];
+    char peer_id[2*SHA_DIGEST_LENGTH + 1];
 
-    char **piece_hashes;
+    unsigned char **piece_hashes;
+    char **piece_hash_digests;
 };
 
 struct localstate_t localstate;

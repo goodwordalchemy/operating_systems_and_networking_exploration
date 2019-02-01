@@ -90,28 +90,21 @@ void _free_hash_pieces_array(char **hpa, int size){
     free(hpa);
 }
 
-void _hex_digest(char *hash, char *buffer){
+void _hex_digest(unsigned char *hash, char *buffer){
     int j;
 
     for (j = 0; j < SHA_DIGEST_LENGTH; j++){
         snprintf(buffer + (j*2), 3,
-                "%02x", 128 + *(hash + j));
+                "%02x", *(hash + j));
     }
 }
 
-void _hash_and_get_digest(unsigned char *str, int to_offset, char *buf){
-    unsigned char hash[SHA_DIGEST_LENGTH];
-
-    SHA1(str, to_offset, hash); 
-
-    _hex_digest((char*)hash, (char*)buf);
-}
-
-char *get_infodict_str(char *buffer){
-    char *substr;
+char *_get_infodict_str(){
+    char *substr, *buffer;
     filestring_t *fs;
 
     fs = read_file_to_string(localstate.metainfo_filename);
+    buffer = malloc(sizeof(char) * (1 + fs->length));
 
     if ((substr = strstr(fs->data, "4:info")) == NULL){
         fprintf(stderr, "Could not find info dictionary in metafile");
@@ -127,46 +120,71 @@ char *get_infodict_str(char *buffer){
     return buffer;
 }
 
-char* _get_infodict_digest(char *metadata_buffer){
-    // TODO get rid of VLA
-    int bufsize = get_file_length(localstate.metainfo_filename) - 8;
-    char infodict_str_buf[bufsize];
+void _get_infodict_hash(unsigned char *hash_buf){
+    char *infodict_str;
 
-    get_infodict_str(infodict_str_buf);
+    infodict_str = _get_infodict_str();
 
-    _hash_and_get_digest((unsigned char*)infodict_str_buf, bufsize, metadata_buffer);
+    SHA1((unsigned char *)infodict_str, strlen(infodict_str), hash_buf); 
 
-    return metadata_buffer;
+    free(infodict_str);
 }
 
-char **_get_piece_hashes_array(int n_pieces){
+void _get_infodict_digest(char *digest_buf){
+    unsigned char hash_buf[SHA_DIGEST_LENGTH];
+
+    _get_infodict_hash(hash_buf);
+
+    printf("about to digest infodict...\n");
+    _hex_digest(hash_buf, digest_buf);
+    printf("digest buf: %s\n", digest_buf);
+}
+
+unsigned char **_get_piece_hashes(){
     int i;
-    char *pieces;
-    char **piece_hashes;
-    char *buffer;
+    unsigned char **pieces;
+    char *pieces_concat;
 
-    pieces = _get_info_node_str("pieces");
-    piece_hashes = malloc(sizeof(char*) * n_pieces);
+    pieces_concat = _get_info_node_str("pieces");
+    
+    pieces = malloc(sizeof(char*) * localstate.n_pieces);
 
-    for (i = 0; i < n_pieces; i++){
-        buffer = malloc(sizeof(char) * SHA_DIGEST_LENGTH*2 + 1);
-
-        _hex_digest(pieces + (i * SHA_DIGEST_LENGTH), buffer);
-
-        piece_hashes[i] = buffer;
+    for (i = 0; i < localstate.n_pieces; i++){
+        pieces[i] = (unsigned char *) (pieces_concat + (i * SHA_DIGEST_LENGTH));
     }
 
-    return piece_hashes;
+    return pieces;
+
+}
+char **_get_piece_hash_digests(){
+    int i;
+    char **piece_hash_digests;
+    char *buffer;
+
+    piece_hash_digests = malloc(sizeof(char*) * localstate.n_pieces);
+
+    for (i = 0; i < localstate.n_pieces; i++){
+        buffer = malloc(sizeof(char) * SHA_DIGEST_LENGTH*2 + 1);
+
+        _hex_digest(localstate.piece_hashes[i], buffer);
+
+        piece_hash_digests[i] = buffer;
+    }
+
+    return piece_hash_digests;
 }
 
 void _get_peer_id(char *buf){
-   char concat[IP_BUFLEN + PORT_BUFLEN]; 
+    unsigned char hash[SHA_DIGEST_LENGTH];
+    char concat[IP_BUFLEN + PORT_BUFLEN]; 
 
-   snprintf(concat, IP_BUFLEN + PORT_BUFLEN, "%s%s", 
+    snprintf(concat, IP_BUFLEN + PORT_BUFLEN, "%s%s", 
             localstate.ip, localstate.client_port);
 
-   _hash_and_get_digest((unsigned char*)concat, sizeof(concat)-1, buf);
 
+    SHA1((unsigned char*)concat, strlen(concat), hash); 
+
+    _hex_digest(hash, (char*)buf);
 }
 
 char *_get_recommended_filename(){
@@ -186,12 +204,13 @@ int print_metainfo(){
     int i;
     char file_size_str[FILE_SIZE_BUFLEN];
 
+
     _write_file_size_str(file_size_str);
 
     printf("\tIP:port           : %s:%s\n", localstate.ip, localstate.client_port);
     printf("\tID                : %s\n", localstate.peer_id);
     printf("\tmetainfo file     : %s\n", localstate.metainfo_filename);
-    printf("\tinfo hash         : %s\n", localstate.info_hash);
+    printf("\tinfo hash         : %s\n", localstate.info_hash_digest);
     printf("\tfile name         : %s\n", localstate.file_name);
     printf("\tpiece length      : %d\n", localstate.piece_length);
     printf("\tfile size         : %s\n", file_size_str);
@@ -199,7 +218,7 @@ int print_metainfo(){
 
     printf("\tpiece hashes      :\n");
     for (i = 0; i < localstate.n_pieces; i++)
-        printf("\t\t%2d\t%s\n", i, localstate.piece_hashes[i]);
+        printf("\t\t%2d\t%s\n", i, localstate.piece_hash_digests[i]);
 
     return 0;
 }
@@ -232,7 +251,6 @@ int populate_metainfo(){
     
     free_filestring(fs);
 
-
     return 0;
 }
 
@@ -246,14 +264,21 @@ void populate_localstate_metainfo(){
     localstate.n_pieces = ceil(localstate.file_size / localstate.piece_length);
     localstate.last_piece_size = localstate.file_size % localstate.piece_length;
 
-    localstate.piece_hashes = _get_piece_hashes_array(localstate.n_pieces);
+    localstate.piece_hashes = _get_piece_hashes();
+    localstate.piece_hash_digests = _get_piece_hash_digests();
+
+    _get_infodict_hash(localstate.info_hash);
     _get_infodict_digest(localstate.info_hash_digest);
+    printf("DEBUG:just after assignment: info hash digewt: %s\n", localstate.info_hash_digest);
 
     get_local_ip_address(localstate.ip, IP_BUFLEN); 
+    printf("DEBUG: maybe something about callstack: info hash digewt: %s\n", localstate.info_hash_digest);
     _get_peer_id(localstate.peer_id);
+    printf("DEBUG: maybe something about callstack: info hash digewt: %s\n", localstate.info_hash_digest);
 }
 
 void setup_metainfo(){
     populate_metainfo();
     populate_localstate_metainfo();
+    printf("DEBUG: populate exits: info hash digewt: %s\n", localstate.info_hash_digest);
 }
