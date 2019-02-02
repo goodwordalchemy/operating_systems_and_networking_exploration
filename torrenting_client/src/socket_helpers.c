@@ -133,10 +133,6 @@ int create_connected_socket(struct addrinfo *servinfo)
         exit(2);
     }
 
-    inet_ntop(p->ai_family, get_internet_address((struct sockaddr *)p->ai_addr),
-            s, sizeof s);
-
-    printf("client: connecting to %s\n", s);
     return sockfd;
 }
 
