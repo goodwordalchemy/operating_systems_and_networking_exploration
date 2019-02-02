@@ -1,6 +1,7 @@
 #include <errno.h>
 #include <math.h>
 #include <openssl/sha.h>
+#include <regex.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12,9 +13,29 @@
 #include "ip_address.h"
 #include "metainfo.h"
 #include "state.h"
-#include "url_parse.h"
 
+#define URL_REGEX  "http[s]?://([A-Za-z0-9~\\-_.]+):?([0-9]+)?/*.*"
 #define FILE_SIZE_BUFLEN 50
+
+void extract_hostname_and_port(char *ip, char *port, char *url){
+    regex_t regex;
+    regmatch_t rm[3];
+
+    if (regcomp(&regex, URL_REGEX, REG_EXTENDED))
+        perror("regcomp");
+
+    if (regexec(&regex, url, 3, rm, REG_EXTENDED))
+        perror("regexec");
+
+	sprintf(ip, "%.*s", (int)(rm[1].rm_eo - rm[1].rm_so), url + rm[1].rm_so);
+	sprintf(port, "%.*s", (int)(rm[2].rm_eo - rm[2].rm_so), url + rm[2].rm_so);
+
+    
+    if (rm[2].rm_so == rm[2].rm_eo) {
+        printf("port is null!\n");
+        sprintf(port, "%d", 80);
+    }
+}
 
 char *_get_announce_url(){
     int idx;
