@@ -7,28 +7,19 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "state.h"
+#include "be_node_utils.h"
 #include "filestring.h"
 #include "ip_address.h"
 #include "metainfo.h"
+#include "state.h"
 #include "url_parse.h"
 
 #define FILE_SIZE_BUFLEN 50
 
-int _index_of_key(be_node *node, char *key){
-    int i;
-
-    for (i = 0; node->val.d[i].val; ++i) {
-        if (!strcmp(node->val.d[i].key, key))
-            return i;
-    }
-    return -1;
-}
-
 char *_get_announce_url(){
     int idx;
 
-    idx = _index_of_key(metainfo, "announce");
+    idx = index_of_key(metainfo, "announce");
 
     return metainfo->val.d[idx].val->val.s;
 }
@@ -38,7 +29,7 @@ be_node *get_info_node(){
     be_dict *metainfo_dict;
     be_node *info_node;
 
-    idx = _index_of_key(metainfo, "info");
+    idx = index_of_key(metainfo, "info");
 
     metainfo_dict= metainfo->val.d;
 
@@ -52,7 +43,7 @@ int _get_info_node_int(char *key){
     be_node *info_node;
 
     info_node = get_info_node();
-    idx = _index_of_key(info_node, key);
+    idx = index_of_key(info_node, key);
 
     res = (int) info_node->val.d[idx].val->val.i;
 
@@ -64,7 +55,7 @@ char *_get_info_node_str(char *key){
     be_node *info_node;
 
     info_node = get_info_node();
-    idx = _index_of_key(info_node, key);
+    idx = index_of_key(info_node, key);
 
     return info_node->val.d[idx].val->val.s;
 }

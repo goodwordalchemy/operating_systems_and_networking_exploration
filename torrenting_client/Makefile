@@ -10,6 +10,7 @@ LDFLAGS=-L/usr/local/Cellar//openssl@1.1/1.1.0g/lib/\
 
 DEPS=announce.h\
 	 bencode/bencode.h\
+	 be_node_utils.h\
 	 filestring.h\
 	 http_response_parse.h\
 	 ip_address.h\
@@ -21,6 +22,7 @@ DEPS=announce.h\
 
 OBJS=announce.o\
 	 bencode/bencode.o\
+	 be_node_utils.o\
 	 filestring.o\
 	 http_response_parse.o\
 	 ip_address.o\
