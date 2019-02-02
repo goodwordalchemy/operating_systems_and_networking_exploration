@@ -12,27 +12,79 @@
 #include "state.h"
 
 #define RECEIVE_BUFLEN 1000
+
+#define PSTRLEN 18
 #define PROTOCOL_NAME "URTorrent protocol"
-#define HANDSHAKE_BUFLEN (49 + 18 + 1)
+#define HANDSHAKE_BUFLEN (49 + PSTRLEN + 1)
+#define RESERVED_SECTION "00000000"
 
 void write_handshake_str(char *buf){
-    char pstrlen = HANDSHAKE_BUFLEN - 1;
-    char *reserved = "00000000";
-
     snprintf(buf, HANDSHAKE_BUFLEN, "%c%s%s%s%s",
-             pstrlen, PROTOCOL_NAME,
-             reserved, localstate.info_hash,
+             PSTRLEN, PROTOCOL_NAME,
+             RESERVED_SECTION,
+             localstate.info_hash,
              localstate.peer_id);
+}
+
+int validate_handshake_str(int sockfd, char *expected_peer_id){
+    int nbytes;
+    char peer_handshake_str[HANDSHAKE_BUFLEN];
+
+    char pstrlen;
+    char pstr[PSTRLEN + 1];
+    char reserved[9];
+    char info_hash[SHA_DIGEST_LENGTH+1];
+    char peer_id[SHA_DIGEST_LENGTH+1];
+    
+    if ((nbytes = receive_on_socket(sockfd, peer_handshake_str, HANDSHAKE_BUFLEN)) <= 0){
+        if (nbytes < 0)
+            perror("recv");
+        return 0;
+    }
+
+    sscanf(peer_handshake_str, "%c%18s%8s%20s%20s",
+           &pstrlen, pstr, reserved,
+           info_hash, peer_id);
+
+    if (pstrlen != PSTRLEN)
+        return 0;
+
+    if (strcmp(pstr, PROTOCOL_NAME) != 0)
+        return  0;
+
+    if (strcmp(reserved, RESERVED_SECTION) != 0)
+        return 0;
+
+    if (strcmp(info_hash, (char*) localstate.info_hash) != 0)
+        return 0;
+
+    if (expected_peer_id != NULL && strcmp(peer_id, expected_peer_id) != 0)
+        return 0;
+
+    return 1;
 }
 
 void handle_message_from_peer(i){
     printf("bytes recieved on socket %d\n", i);
 }
 
+int send_handshake_str(int sockfd){
+    int nbytes;
+    char handshake_str[HANDSHAKE_BUFLEN];
+
+    write_handshake_str(handshake_str);
+    if ((nbytes = send_on_socket(sockfd, handshake_str, strlen(handshake_str))) < 0)
+        perror("send");
+
+    return nbytes;
+
+}
+
 int _initiate_connection_with_peer(be_node *peer){
     int sockfd;
     struct addrinfo *servinfo;
 
+    char *expected_peer_id;
     char port_str[PORT_BUFLEN];
     char *ip = get_be_node_str(peer, "ip");
     int port = get_be_node_int(peer, "port");
@@ -43,32 +95,36 @@ int _initiate_connection_with_peer(be_node *peer){
     sockfd = create_connected_socket(servinfo);
     freeaddrinfo(servinfo);
 
+    if (send_handshake_str(sockfd) <= 0){
+        close(sockfd);
+        return -1;
+    }
+
+    expected_peer_id = get_be_node_str(peer, "peer id");
+    if (!validate_handshake_str(sockfd, expected_peer_id)){
+        close(sockfd);
+        return -1;
+    }
+
     return sockfd;
 }
 
 void initiate_connections_with_peers(fd_set *fds){
     int sockfd;
     be_node **pl;
-    char handshake_str[HANDSHAKE_BUFLEN];
-
-    write_handshake_str(handshake_str);
     
     pl = get_peers_list();
     while (*pl){
-        sockfd = _initiate_connection_with_peer(*pl);
-        if (send_on_socket(sockfd, handshake_str, strlen(handshake_str)) <= 0){
-            perror("send");
-            close(sockfd);
-        }
-        else 
+        if ((sockfd = _initiate_connection_with_peer(*pl)) <= 0)
+            fprintf(stderr, "Error connecting with peer %s",
+                    get_be_node_str(*pl, "ip"));
+
+        else {
             FD_SET(sockfd, fds);
+            // Send bitfield message
+        }
         pl++;
     }
-}
-
-int validate_handshake_str(char *handshake_str, char *expected_peer_id){
-
-    return 1;
 }
 
 int handle_connection_initiated_by_peer(int listener, fd_set *fds){
@@ -76,7 +132,6 @@ int handle_connection_initiated_by_peer(int listener, fd_set *fds){
     struct sockaddr_storage remoteaddr; // client address
     socklen_t addrlen;
 
-    char peer_handshake_str[HANDSHAKE_BUFLEN];
     char my_handshake_str[HANDSHAKE_BUFLEN];
 
     addrlen = sizeof(remoteaddr);
@@ -89,18 +144,10 @@ int handle_connection_initiated_by_peer(int listener, fd_set *fds){
         return -1;
     }
 
-    // validate peer handshake
-    if ((nbytes = receive_on_socket(newfd, peer_handshake_str, HANDSHAKE_BUFLEN)) <= 0){
-        if (nbytes < 0)
-            perror("recv");
-        close(newfd);
-    }
-
-    if (!validate_handshake_str(peer_handshake_str, NULL)){
+    if (!validate_handshake_str(newfd, NULL)){
         close(newfd);
         return -1;
     }
-
 
     write_handshake_str(my_handshake_str);
     if (send_on_socket(newfd, my_handshake_str, strlen(my_handshake_str)) <= 0){
@@ -109,6 +156,7 @@ int handle_connection_initiated_by_peer(int listener, fd_set *fds){
         return -1;
     }
     FD_SET(newfd, fds);
+    // Send bitfield message
 
     return newfd;
 }
