@@ -32,7 +32,7 @@ int repl(){
             print_announce();
 
         else if (!strcmp(input_buffer, "trackerinfo"))
-            puts("trackerinfo not implemented yet");
+            print_trackerinfo();
 
         else if (!strcmp(input_buffer, "show"))
             puts("show not implemented yet");

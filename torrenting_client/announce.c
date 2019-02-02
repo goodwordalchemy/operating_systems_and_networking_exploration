@@ -191,14 +191,15 @@ void print_peers_row(){
     printf("\n");
 }
 
-void print_announce(){
-    http_response_t *r;
+void print_trackerinfo(){
     int info_row_width = (COLUMN_WIDTH+3) * n_announce_keys;
     int peers_row_width = (COLUMN_WIDTH+3) * n_peers_keys;
 
-    r = announce();
+    if (trackerinfo == NULL){
+        fprintf(stderr, "Error: Need to announce yourself to tracker first\n");
+        return;
+    }
 
-    printf("\tTracker responded: %s\n", r->status_line);
     print_info_header_row();
     print_horizontal_line(info_row_width);
     print_info_row();
@@ -209,6 +210,14 @@ void print_announce(){
     print_horizontal_line(peers_row_width);
     print_peers_row();
     print_horizontal_line(peers_row_width);
+}
 
+void print_announce(){
+    http_response_t *r;
+
+    r = announce();
+    printf("\tTracker responded: %s\n", r->status_line);
     free_http_response(r);
+
+    print_trackerinfo();
 }
