@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "be_node_utils.h"
 #include "http_response_parse.h"
 #include "state.h"
 #include "socket_helpers.h"
@@ -17,8 +18,8 @@
 #define COLUMN_WIDTH 15
 
 
-char *announce_keys[] = {"complete", "downloaded", "incomplete", "interval", "min interval"};
-int n_announce_keys = 5;
+char *announce_keys[] = {"complete", "incomplete", "interval", "min interval"};
+int n_announce_keys = 4;
 
 int _encode_me(unsigned char l){
     int ans = 0;
@@ -120,48 +121,56 @@ void print_horizontal_line(int width){
     printf("\n");
 }
 
-void print_cell(char *value){
+void print_char_cell(char *value){
     int indent;
 
     indent = COLUMN_WIDTH - strlen(value);
     printf("%s%*s | ", value, indent, "");
 }
 
+void print_int_cell(int value){
+    char buf[COLUMN_WIDTH];
+
+    snprintf(buf, COLUMN_WIDTH, "%d", value);
+
+    print_char_cell(buf);
+}
+
 void print_header_row(){
     int i;
-    int row_width = (COLUMN_WIDTH+3) * n_announce_keys;
 
     printf("\t");
     for (i = 0; i < n_announce_keys; i++){
-        print_cell(announce_keys[i]);
+        print_char_cell(announce_keys[i]);
     }
     printf("\n");
-
-    print_horizontal_line(row_width);
 }
+
 
 void print_info_row(){
-    int row_width = (COLUMN_WIDTH+3) * n_announce_keys;
-    int i, indent;
+    int val, i;
 
     printf("\t");
     for (i = 0; i < n_announce_keys; i++){
-        indent = COLUMN_WIDTH - strlen(announce_keys[i]);
-        printf("%s%*s | ", announce_keys[i], indent, "");
+        if ((val = get_be_node_int(trackerinfo, announce_keys[i])) != -1)
+            print_int_cell(val);
+        else
+            print_char_cell("-");
     }
     printf("\n");
-
-    print_horizontal_line(row_width);
 }
-
-
 
 void print_announce(){
     http_response_t *r;
+    int row_width = (COLUMN_WIDTH+3) * n_announce_keys;
+
     r = announce();
 
     printf("\tTracker responded: %s\n", r->status_line);
     print_header_row();
+    print_horizontal_line(row_width);
+    print_info_row();
+    print_horizontal_line(row_width);
 
     free_http_response(r);
 }
