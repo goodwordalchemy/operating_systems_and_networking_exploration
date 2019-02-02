@@ -5,7 +5,7 @@
 
 #include "http_response_parse.h"
 
-#define HTTP_RESPONSE_REGEX "(HTTP/1.1 [0-9][0-9][0-9] OK)(\r\n.*)*Content-Length: ([0-9]+)\r\n\r\n(.*)\r\n"
+#define HTTP_RESPONSE_REGEX "(HTTP/1.1 [0-9][0-9][0-9] OK)(\r\n.*)*Content-Length: ([0-9]+)\r\n\r\n(.*)"
 
 void free_http_response(http_response_t *resp){
     free(resp->status_line);
@@ -20,7 +20,8 @@ http_response_t *extract_response_content(char *response){
     regex_t regex;
     regmatch_t rm[5];
 
-    r = malloc(sizeof(http_response_t));
+    if ((r = malloc(sizeof(http_response_t))) == NULL)
+        perror("http_response malloc");
 
     if ((rc = regcomp(&regex, HTTP_RESPONSE_REGEX, REG_EXTENDED)) != 0){
         regerror(rc, &regex, err_buf, 100);
@@ -32,14 +33,27 @@ http_response_t *extract_response_content(char *response){
         fprintf(stderr, "regexec() failed with '%s'\n", err_buf);
     }
 
-    r->status_line = malloc(sizeof(char) * ((rm[1].rm_eo - rm[1].rm_so) + 1));
+    /* for debugging: */
+	/* printf("0: %.*s\n", (int)(rm[1].rm_eo - rm[1].rm_so), response + rm[1].rm_so); */
+	/* printf("1: %.*s\n", (int)(rm[2].rm_eo - rm[2].rm_so), response + rm[2].rm_so); */
+	/* printf("2: %.*s\n", (int)(rm[3].rm_eo - rm[3].rm_so), response + rm[3].rm_so); */
+	/* printf("3: %.*s\n", (int)(rm[4].rm_eo - rm[4].rm_so), response + rm[4].rm_so); */
+    /* printf("start = %lld, end=%lld\n", rm[1].rm_so, rm[1].rm_eo); */
+    /* printf("status line size: %d\n", (int)(rm[1].rm_eo - rm[1].rm_so)); */
+
+
+    if ((r->status_line = malloc(sizeof(char) * ((rm[1].rm_eo - rm[1].rm_so) + 1))) == NULL)
+        perror("status line malloc");
+
 	sprintf(r->status_line, "%.*s", (int)(rm[1].rm_eo - rm[1].rm_so), response + rm[1].rm_so);
     sscanf(r->status_line, "HTTP/1.1 %3d%*s", &r->status_code);
 
 	sprintf(cl_buf, "%.*s", (int)(rm[3].rm_eo - rm[3].rm_so), response + rm[3].rm_so);
     r->content_length = atoi(cl_buf);
 
-    r->content = malloc(sizeof(char) * (r->content_length + 1));
+    if ((r->content = malloc(sizeof(char) * (r->content_length + 1))) == NULL)
+        perror("content malloc");
+
 	sprintf(r->content, "%.*s", (int)(rm[4].rm_eo - rm[4].rm_so), response + rm[4].rm_so);
 
     regfree(&regex);
