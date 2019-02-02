@@ -3,12 +3,14 @@
 # 	$@ refers to the left side of the colon
 # 	$< is the first item in the dependecy list
 # 	$^ is the right side of the colon
+SRCDIR=src
+OBJDIR=obj
 CC = gcc
 CFLAGS=-Wall -g 
 LDFLAGS=-L/usr/local/Cellar//openssl@1.1/1.1.0g/lib/\
 		-I/usr/local/Cellar//openssl@1.1/1.1.0g/
 
-DEPS=announce.h\
+_DEPS=announce.h\
 	 bencode/bencode.h\
 	 be_node_utils.h\
 	 filestring.h\
@@ -18,10 +20,11 @@ DEPS=announce.h\
 	 repl.h\
 	 socket_helpers.h\
 	 state.h\
-	 url_parse.h\
+	 url_parse.h
+DEPS=$(patsubst %, $(SRCDIR)/%, $(_DEPS))
 
-OBJS=announce.o\
-	 bencode/bencode.o\
+_OBJS=announce.o\
+	 bencode.o\
 	 be_node_utils.o\
 	 filestring.o\
 	 http_response_parse.o\
@@ -30,17 +33,23 @@ OBJS=announce.o\
 	 repl.o\
 	 socket_helpers.o\
 	 url_parse.o\
-	 urtorrent.o\
+	 urtorrent.o
+OBJS=$(patsubst %, $(OBJDIR)/%, $(_OBJS))
 
 all: urtorrent
 
-%.o: %.c $(DEPS)
+$(OBJDIR)/bencode.o: $(SRCDIR)/bencode/bencode.c $(SRCDIR)/bencode/bencode.h
+	$(CC) -c -o $@ $< $(CFLAGS)
+	
+
+$(OBJDIR)/%.o: $(SRCDIR)/%.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 urtorrent: $(OBJS)
-	$(CC) $(CFLAGS) $(LDFLAGS) -lcrypto -o urtorrent $(OBJS)
+	$(CC) $(CFLAGS) $(LDFLAGS) -lcrypto -o $@ $^
 
 .PHONY: clean
 
 clean: 
-	rm *.o
+	rm $(OBJDIR)/*.o
+	rm -rf *.dSYM
