@@ -39,25 +39,19 @@ be_node *get_info_node(){
 }
 
 int _get_info_node_int(char *key){
-    int idx, res;
     be_node *info_node;
 
     info_node = get_info_node();
-    idx = index_of_key(info_node, key);
 
-    res = (int) info_node->val.d[idx].val->val.i;
-
-    return res;
+    return get_be_node_int(info_node, key);
 }
 
 char *_get_info_node_str(char *key){
-    int idx;
     be_node *info_node;
 
     info_node = get_info_node();
-    idx = index_of_key(info_node, key);
 
-    return info_node->val.d[idx].val->val.s;
+    return get_be_node_str(info_node, key);
 }
 
 void _write_file_size_str(char *buf){
