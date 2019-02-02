@@ -17,7 +17,6 @@ _DEPS=announce.h\
 	 http_response_parse.h\
 	 ip_address.h\
 	 metainfo.h\
-	 repl.h\
 	 socket_helpers.h\
 	 state.h\
 	 url_parse.h
@@ -30,7 +29,6 @@ _OBJS=announce.o\
 	 http_response_parse.o\
 	 ip_address.o\
 	 metainfo.o\
-	 repl.o\
 	 socket_helpers.o\
 	 url_parse.o\
 	 urtorrent.o

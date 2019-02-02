@@ -188,30 +188,6 @@ int _get_file_size(){
     return _get_info_node_int("length");
 }
 
-
-int print_metainfo(){
-    int i;
-    char file_size_str[FILE_SIZE_BUFLEN];
-
-
-    _write_file_size_str(file_size_str);
-
-    printf("\tIP:port           : %s:%s\n", localstate.ip, localstate.client_port);
-    printf("\tID                : %s\n", localstate.peer_id);
-    printf("\tmetainfo file     : %s\n", localstate.metainfo_filename);
-    printf("\tinfo hash         : %s\n", localstate.info_hash_digest);
-    printf("\tfile name         : %s\n", localstate.file_name);
-    printf("\tpiece length      : %d\n", localstate.piece_length);
-    printf("\tfile size         : %s\n", file_size_str);
-    printf("\tannounce URL      : %s\n", localstate.announce_url);
-
-    printf("\tpiece hashes      :\n");
-    for (i = 0; i < localstate.n_pieces; i++)
-        printf("\t\t%2d\t%s\n", i, localstate.piece_hash_digests[i]);
-
-    return 0;
-}
-
 void _populate_is_seeder(){
     char *rec_filename;
     struct stat buf;
@@ -281,4 +257,28 @@ void free_localstate_metainfo(){
         free(localstate.piece_hash_digests[i]);
 
     free(localstate.piece_hash_digests);
+}
+
+int print_metainfo(){
+    int i;
+    char file_size_str[FILE_SIZE_BUFLEN];
+
+    setup_metainfo();
+
+    _write_file_size_str(file_size_str);
+
+    printf("\tIP:port           : %s:%s\n", localstate.ip, localstate.client_port);
+    printf("\tID                : %s\n", localstate.peer_id);
+    printf("\tmetainfo file     : %s\n", localstate.metainfo_filename);
+    printf("\tinfo hash         : %s\n", localstate.info_hash_digest);
+    printf("\tfile name         : %s\n", localstate.file_name);
+    printf("\tpiece length      : %d\n", localstate.piece_length);
+    printf("\tfile size         : %s\n", file_size_str);
+    printf("\tannounce URL      : %s\n", localstate.announce_url);
+
+    printf("\tpiece hashes      :\n");
+    for (i = 0; i < localstate.n_pieces; i++)
+        printf("\t\t%2d\t%s\n", i, localstate.piece_hash_digests[i]);
+
+    return 0;
 }

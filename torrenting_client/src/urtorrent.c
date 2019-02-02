@@ -4,10 +4,9 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include "state.h"
+#include "announce.h"
 #include "metainfo.h"
-#include "repl.h"
-
+#include "state.h"
 
 int main(int argc, char *argv[]) {
     int rc;
@@ -21,10 +20,11 @@ int main(int argc, char *argv[]) {
     localstate.client_port = argv[1];
     localstate.metainfo_filename = argv[2];
 
-    puts("Setting up client state...");
-    setup_metainfo();
+    printf("Parsing torrent file...");
+    print_metainfo();
 
-    rc = repl();
+    printf("Registering with tracker...");
+    print_announce();
 
     free_localstate_metainfo();
     be_free(metainfo);
