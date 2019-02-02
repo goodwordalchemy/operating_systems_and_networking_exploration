@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "http_response_parse.h"
 #include "state.h"
 #include "socket_helpers.h"
 
@@ -60,11 +61,6 @@ void _get_request_string(char *buffer){
             left_buf, COMPACT_PEER_FORMAT);
 }
 
-void _parse_tracker_response(const char *response){
-    
-}
-
-
 void _get_response_from_tracker(const char *request, char *response_buf){
     int sockfd;
     struct addrinfo *servinfo;
@@ -83,7 +79,15 @@ void _get_response_from_tracker(const char *request, char *response_buf){
         fprintf(stderr, "Error: Did not receive a announce response from tracker.\n");
 }
 
-void print_announce(){
+
+/*
+This function does a lot of things worth noting:
+* makes an announment to the tracker.
+* stores the response from the tracker on the heap.
+* returns the response from the tracker.
+* parses the response from the tracker and stores it on the heap in the global variable: tracker_response
+*/
+http_response_t *announce(){
     char announce_request[REQUEST_BUFLEN];
     char announce_response[RESPONSE_BUFLEN];
     
@@ -93,4 +97,21 @@ void print_announce(){
 
     printf("\n\nannounce request: %s\n\n", announce_request);
     printf("announce response: %s\n", announce_response);
+
+    http_response_t *r = extract_response_content(announce_response);
+
+    if ((trackerinfo = be_decoden(r->content, r->content_length)) == NULL)
+        fprintf(stderr, "Error parsing the tracker repsonse\n");
+
+    return r;
+}
+
+
+void print_announce(){
+    http_response_t *r;
+    r = announce();
+
+    free_http_response(r);
+
+    
 }

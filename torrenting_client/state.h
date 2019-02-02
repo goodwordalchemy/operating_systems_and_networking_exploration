@@ -7,6 +7,7 @@
 #define PORT_BUFLEN 6
 
 be_node *metainfo;
+be_node *trackerinfo;
 
 struct localstate_t {
     // process state

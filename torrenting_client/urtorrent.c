@@ -28,6 +28,7 @@ int main(int argc, char *argv[]) {
 
     free_localstate_metainfo();
     be_free(metainfo);
+    be_free(trackerinfo);
 
     return rc;
 }
