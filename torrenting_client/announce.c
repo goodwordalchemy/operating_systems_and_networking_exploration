@@ -14,6 +14,11 @@
 #define REQUEST_BUFLEN 255
 #define RESPONSE_BUFLEN 8192
 
+#define COLUMN_WIDTH 15
+
+
+char *announce_keys[] = {"complete", "downloaded", "incomplete", "interval", "min interval"};
+int n_announce_keys = 5;
 
 int _encode_me(unsigned char l){
     int ans = 0;
@@ -95,8 +100,8 @@ http_response_t *announce(){
 
     _get_response_from_tracker(announce_request, announce_response);
 
-    printf("\n\nannounce request: %s\n\n", announce_request);
-    printf("announce response: %s\n", announce_response);
+    /* printf("\n\nannounce request: %s\n\n", announce_request); */
+    /* printf("announce response: %s\n", announce_response); */
 
     http_response_t *r = extract_response_content(announce_response);
 
@@ -106,12 +111,57 @@ http_response_t *announce(){
     return r;
 }
 
+/* d8:completei1e10:incompletei0e8:intervali600e5:peersld2:ip9:127.0.0.17:peer id20:b0901b3ede5354f33ec74:porti8080eeee */
+void print_horizontal_line(int width){
+    int i;
+    printf("\t");
+    for (i = 0; i < width; i++)
+        printf("%s", "-");
+    printf("\n");
+}
+
+void print_cell(char *value){
+    int indent;
+
+    indent = COLUMN_WIDTH - strlen(value);
+    printf("%s%*s | ", value, indent, "");
+}
+
+void print_header_row(){
+    int i;
+    int row_width = (COLUMN_WIDTH+3) * n_announce_keys;
+
+    printf("\t");
+    for (i = 0; i < n_announce_keys; i++){
+        print_cell(announce_keys[i]);
+    }
+    printf("\n");
+
+    print_horizontal_line(row_width);
+}
+
+void print_info_row(){
+    int row_width = (COLUMN_WIDTH+3) * n_announce_keys;
+    int i, indent;
+
+    printf("\t");
+    for (i = 0; i < n_announce_keys; i++){
+        indent = COLUMN_WIDTH - strlen(announce_keys[i]);
+        printf("%s%*s | ", announce_keys[i], indent, "");
+    }
+    printf("\n");
+
+    print_horizontal_line(row_width);
+}
+
+
 
 void print_announce(){
     http_response_t *r;
     r = announce();
 
-    free_http_response(r);
+    printf("\tTracker responded: %s\n", r->status_line);
+    print_header_row();
 
-    
+    free_http_response(r);
 }
