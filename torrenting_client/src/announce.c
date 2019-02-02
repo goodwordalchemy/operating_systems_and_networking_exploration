@@ -182,13 +182,13 @@ void print_peers_row(){
 
     pl = get_peers_list();
 
-    printf("\t");
     while (*pl){
+        printf("\t");
         print_str_cell(get_be_node_str(*pl, "ip"));
         print_int_cell(get_be_node_int(*pl, "port"));
         pl++;
+        printf("\n");
     }
-    printf("\n");
 }
 
 void print_trackerinfo(){
