@@ -14,7 +14,8 @@ int index_of_key(be_node *node, char *key){
 
 int get_be_node_int(be_node *node, char *key){
     int res, idx;
-    idx = index_of_key(node, key);
+    if ((idx = index_of_key(node, key)) == -1)
+        return -1;
 
     res = (int) node->val.d[idx].val->val.i;
 
@@ -24,7 +25,8 @@ int get_be_node_int(be_node *node, char *key){
 char *get_be_node_str(be_node *node, char *key){
     int idx;
 
-    idx = index_of_key(node, key);
+    if ((idx = index_of_key(node, key)) == -1)
+        return NULL;
 
     return node->val.d[idx].val->val.s;
 }
