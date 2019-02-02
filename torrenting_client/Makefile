@@ -14,6 +14,7 @@ _DEPS=announce.h\
 	 bencode/bencode.h\
 	 be_node_utils.h\
 	 filestring.h\
+	 handshake.h\
 	 http_response_parse.h\
 	 ip_address.h\
 	 metainfo.h\
@@ -25,6 +26,7 @@ _OBJS=announce.o\
 	 bencode.o\
 	 be_node_utils.o\
 	 filestring.o\
+	 handshake.o\
 	 http_response_parse.o\
 	 ip_address.o\
 	 metainfo.o\

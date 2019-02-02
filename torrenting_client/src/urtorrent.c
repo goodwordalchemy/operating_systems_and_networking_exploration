@@ -6,11 +6,10 @@
 
 #include "announce.h"
 #include "metainfo.h"
+#include "handshake.h"
 #include "state.h"
 
 int main(int argc, char *argv[]) {
-    int rc;
-
     if (argc != 3){
         printf("URTorrent: a simple torrenting client\n\n"
                "Usage: urtorrent <port> <torrent_file>\n\n");
@@ -20,15 +19,18 @@ int main(int argc, char *argv[]) {
     localstate.client_port = argv[1];
     localstate.metainfo_filename = argv[2];
 
-    printf("Parsing torrent file...");
+    printf("Parsing torrent file...\n");
     print_metainfo();
 
-    printf("Registering with tracker...");
+    printf("Registering with tracker...\n");
     print_announce();
+
+    printf("Downloading pieces from peers...\n");
+    setup_peer_connections();
 
     free_localstate_metainfo();
     be_free(metainfo);
     be_free(trackerinfo);
 
-    return rc;
+    return 0;
 }

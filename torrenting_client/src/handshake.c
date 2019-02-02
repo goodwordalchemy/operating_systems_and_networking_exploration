@@ -128,7 +128,7 @@ void initiate_connections_with_peers(fd_set *fds){
 }
 
 int handle_connection_initiated_by_peer(int listener, fd_set *fds){
-    int newfd, nbytes;
+    int newfd;
     struct sockaddr_storage remoteaddr; // client address
     socklen_t addrlen;
 
