@@ -21,6 +21,9 @@
 char *announce_keys[] = {"complete", "incomplete", "interval", "min interval"};
 int n_announce_keys = 4;
 
+char *peers_keys[] = {"ip", "port"};
+int n_peers_keys = 2;
+
 int _encode_me(unsigned char l){
     int ans = 0;
       
@@ -112,7 +115,6 @@ http_response_t *announce(){
     return r;
 }
 
-/* d8:completei1e10:incompletei0e8:intervali600e5:peersld2:ip9:127.0.0.17:peer id20:b0901b3ede5354f33ec74:porti8080eeee */
 void print_horizontal_line(int width){
     int i;
     printf("\t");
@@ -121,7 +123,7 @@ void print_horizontal_line(int width){
     printf("\n");
 }
 
-void print_char_cell(char *value){
+void print_str_cell(char *value){
     int indent;
 
     indent = COLUMN_WIDTH - strlen(value);
@@ -133,15 +135,15 @@ void print_int_cell(int value){
 
     snprintf(buf, COLUMN_WIDTH, "%d", value);
 
-    print_char_cell(buf);
+    print_str_cell(buf);
 }
 
-void print_header_row(){
+void print_info_header_row(){
     int i;
 
     printf("\t");
     for (i = 0; i < n_announce_keys; i++){
-        print_char_cell(announce_keys[i]);
+        print_str_cell(announce_keys[i]);
     }
     printf("\n");
 }
@@ -155,22 +157,58 @@ void print_info_row(){
         if ((val = get_be_node_int(trackerinfo, announce_keys[i])) != -1)
             print_int_cell(val);
         else
-            print_char_cell("-");
+            print_str_cell("-");
+    }
+    printf("\n");
+}
+
+/* d8:completei1e10:incompletei0e8:intervali600e5:peersld2:ip9:127.0.0.17:peer id20:b0901b3ede5354f33ec74:porti8080eeee */
+void print_peers_header_row(){
+    int i;
+
+    printf("\t");
+    for (i = 0; i < n_peers_keys; i++){
+        print_str_cell(peers_keys[i]);
+    }
+    printf("\n");
+}
+
+be_node **get_peers_list(){
+    return trackerinfo->val.d[3].val->val.l;
+}
+
+void print_peers_row(){
+    be_node **pl;
+
+    pl = get_peers_list();
+
+    printf("\t");
+    while (*pl){
+        print_str_cell(get_be_node_str(*pl, "ip"));
+        print_int_cell(get_be_node_int(*pl, "port"));
+        pl++;
     }
     printf("\n");
 }
 
 void print_announce(){
     http_response_t *r;
-    int row_width = (COLUMN_WIDTH+3) * n_announce_keys;
+    int info_row_width = (COLUMN_WIDTH+3) * n_announce_keys;
+    int peers_row_width = (COLUMN_WIDTH+3) * n_peers_keys;
 
     r = announce();
 
     printf("\tTracker responded: %s\n", r->status_line);
-    print_header_row();
-    print_horizontal_line(row_width);
+    print_info_header_row();
+    print_horizontal_line(info_row_width);
     print_info_row();
-    print_horizontal_line(row_width);
+    print_horizontal_line(info_row_width);
+
+    printf("\tPeer List:\n");
+    print_peers_header_row();
+    print_horizontal_line(peers_row_width);
+    print_peers_row();
+    print_horizontal_line(peers_row_width);
 
     free_http_response(r);
 }
