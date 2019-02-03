@@ -43,11 +43,19 @@ int validate_handshake_str(int sockfd, char *expected_peer_id){
         return 0;
     }
 
-    sscanf(peer_handshake_str, "%c%18c%8c%20c%20c",
+    sscanf(peer_handshake_str, "%c%18c%8s%20c%20c",
            &pstrlen, pstr, reserved,
            info_hash, peer_id);
 
+    pstr[PSTRLEN] = 0;
+    info_hash[SHA_DIGEST_LENGTH] = 0;
+    peer_id[SHA_DIGEST_LENGTH] = 0;
+    printf("DEBUG: thepstrlen: %d\n", pstrlen);
     printf("DEBUG: peer's validation string: %s\n", peer_handshake_str);
+    printf("DEBUG: pstr right after sscanf: %s\n", pstr);
+    printf("DEBUG: length of pstr right after sscanf: %lu\n", strlen(pstr));
+
+
     if (pstrlen != PSTRLEN){
         puts("DEBUG: pstrlen is wrong");
         return 0;
