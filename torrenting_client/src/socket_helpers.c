@@ -130,8 +130,9 @@ int create_connected_socket(struct addrinfo *servinfo)
 
     if (p == NULL) {
         fprintf(stderr, "client: failed to connect\n");
-        exit(2);
+        return -1;
     }
+    printf("DEBUG: create connected socket about to return\n");
 
     return sockfd;
 }
@@ -151,7 +152,7 @@ int receive_on_socket(int sockfd, char *buf, int buf_len)
     int numbytes;
     if ((numbytes = recv(sockfd, buf, buf_len-1, 0)) == -1) {
         perror("recv");
-        exit(1);
+        return -1;
     }
 
     buf[numbytes] = '\0';

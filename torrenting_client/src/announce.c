@@ -15,14 +15,14 @@
 #define REQUEST_BUFLEN 255
 #define RESPONSE_BUFLEN 8192
 
-#define COLUMN_WIDTH 15
+#define COLUMN_WIDTH 23
 
 
 char *announce_keys[] = {"complete", "incomplete", "interval", "min interval"};
 int n_announce_keys = 4;
 
-char *peers_keys[] = {"ip", "port"};
-int n_peers_keys = 2;
+char *peers_keys[] = {"peer id", "ip", "port"};
+int n_peers_keys = 3;
 
 int _encode_me(unsigned char l){
     int ans = 0;
@@ -184,6 +184,7 @@ void print_peers_row(){
 
     while (*pl){
         printf("\t");
+        print_str_cell(get_be_node_str(*pl, "peer id"));
         print_str_cell(get_be_node_str(*pl, "ip"));
         print_int_cell(get_be_node_int(*pl, "port"));
         pl++;
@@ -200,12 +201,13 @@ void print_trackerinfo(){
         return;
     }
 
+    printf("\tTracker info\n\n");
     print_info_header_row();
     print_horizontal_line(info_row_width);
     print_info_row();
     print_horizontal_line(info_row_width);
 
-    printf("\tPeer List:\n");
+    printf("\tPeer List:\n\n");
     print_peers_header_row();
     print_horizontal_line(peers_row_width);
     print_peers_row();

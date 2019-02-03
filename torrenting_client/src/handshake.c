@@ -61,6 +61,8 @@ int validate_handshake_str(int sockfd, char *expected_peer_id){
     if (expected_peer_id != NULL && strcmp(peer_id, expected_peer_id) != 0)
         return 0;
 
+    puts("hooray! validated a peer.\n");
+
     return 1;
 }
 
@@ -95,13 +97,18 @@ int _initiate_connection_with_peer(be_node *peer){
     sockfd = create_connected_socket(servinfo);
     freeaddrinfo(servinfo);
 
+    if (sockfd == -1)
+        return -1;
+
     if (send_handshake_str(sockfd) <= 0){
+        fprintf(stderr, "Error sending handshake\n");
         close(sockfd);
         return -1;
     }
 
     expected_peer_id = get_be_node_str(peer, "peer id");
     if (!validate_handshake_str(sockfd, expected_peer_id)){
+        fprintf(stderr, "handshake did not validate.\n");
         close(sockfd);
         return -1;
     }
@@ -115,9 +122,15 @@ void initiate_connections_with_peers(fd_set *fds){
     
     pl = get_peers_list();
     while (*pl){
+        if (strcmp(get_be_node_str(*pl, "peer id"), localstate.peer_id) == 0){
+            pl++;
+            continue;
+        }
+
         if ((sockfd = _initiate_connection_with_peer(*pl)) <= 0)
-            fprintf(stderr, "Error connecting with peer %s",
-                    get_be_node_str(*pl, "ip"));
+            fprintf(stderr, "Error connecting with peer at %s:%d\n",
+                    get_be_node_str(*pl, "ip"),
+                    get_be_node_int(*pl, "port"));
 
         else {
             FD_SET(sockfd, fds);
@@ -168,6 +181,8 @@ int create_listener_socket(fd_set *fds){
     listener = create_bound_socket(servinfo);
     freeaddrinfo(servinfo);
 
+    listen_on_socket(listener, BACKLOG);
+
     FD_SET(listener, fds);
 
     return listener;
@@ -198,6 +213,7 @@ int setup_peer_connections(){
         for (i = 0; i <= fdmax; i++){
             if (FD_ISSET(i, &read_fds)){ // found socket with data to read 
                 if (i == listener){
+                    puts("DEBUG: peer wants to share with me!");
                     newfd = handle_connection_initiated_by_peer(i, &master);
                     if (newfd > fdmax)
                         fdmax = newfd;
