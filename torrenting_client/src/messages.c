@@ -40,8 +40,6 @@ int send_peer_message(int sockfd, msg_t *msg){
 
     encode_int_as_char(msg->length, buf, LENGTH_PREFIX_BITS);
 
-    printf("DEBUG: encoded length: %s\n", buf);
-
     buf[LENGTH_PREFIX_BITS] = msg->type;
 
     memcpy(buf + LENGTH_PREFIX_BITS + 1, msg->payload, msg->length);
@@ -50,12 +48,6 @@ int send_peer_message(int sockfd, msg_t *msg){
 
     nbytes = send_on_socket(sockfd, buf, full_length);
     
-    printf("DEBUG: msg length before: %d, after: %d\n", msg->length, decode_int_from_char(buf, 4));
-    printf("DEBUG: msg type before: %d, msg type after: %d\n", msg->type, buf[LENGTH_PREFIX_BITS]);
-    printf("DEBUG: msg payload before: %.*s, after: %.*s\n", msg->length, msg->payload, msg->length, buf+LENGTH_PREFIX_BITS+1);
-    printf("DEBUG: msg payload (1st byte) before: %d, after: %d\n", msg->payload[0], buf[LENGTH_PREFIX_BITS+1]);
-    printf("DEBUG: sizeof msg: %lu\n", sizeof(buf));
-
     free(buf);
 
     return nbytes;
@@ -101,16 +93,9 @@ int send_bitfield_message(int sockfd){
         memcpy(temp_filename_buffer + strlen(filename), piece_hash, SHA_DIGEST_LENGTH + 1);
         if (_does_file_exist(temp_filename_buffer) || i == localstate.n_pieces - 1 || i == 0)
             acc += (1 << (localstate.n_pieces - 1 - i));
-        printf("DEBUG: i=%d, acc=%d\n", i, acc);
     }
-    printf("DEBUG: acc %d\n", acc);
-    printf("DEBUG: npieces: %d\n", localstate.n_pieces);
-    printf("DEBUG: npiece bits: %d\n", n_piece_bits);
-    printf("DEBUG: shifting %d bits\n", (n_shift_bits));
     acc = acc << n_shift_bits;
-    printf("DEBUG: acc shifted %d\n", acc);
     encode_int_as_char(acc, bf_buf, n_bitfield_bytes);
-    printf("DEBUG: this should equal acc shifted: %d\n", decode_int_from_char(bf_buf, n_bitfield_bytes));
 
     // create message struct
     msg.length = n_bitfield_bytes;
