@@ -131,7 +131,7 @@ int _initiate_connection_with_peer(be_node *peer){
     }
 
     if (receive_bitfield_message(sockfd) <= 0){
-        fprintf(stderr, "could not receive bitfield message to peer\n");
+        fprintf(stderr, "could not receive bitfield message from peer\n");
         close(sockfd);
         return -1;
     }
@@ -192,14 +192,14 @@ int handle_connection_initiated_by_peer(int listener, fd_set *fds){
         return -1;
     }
 
-    if (send_bitfield_message(newfd) <= 0){
-        fprintf(stderr, "could not send bitfield message to peer\n");
+    if (receive_bitfield_message(newfd) <= 0){
+        fprintf(stderr, "could not receive bitfield message from peer\n");
         close(newfd);
         return -1;
     }
 
-    if (receive_bitfield_message(newfd) <= 0){
-        fprintf(stderr, "could not receive bitfield message to peer\n");
+    if (send_bitfield_message(newfd) <= 0){
+        fprintf(stderr, "could not send bitfield message to peer\n");
         close(newfd);
         return -1;
     }
