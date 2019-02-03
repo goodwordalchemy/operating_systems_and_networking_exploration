@@ -22,7 +22,7 @@ void write_handshake_str(char *buf){
     snprintf(buf, HANDSHAKE_BUFLEN, "%c%s%s%s%s",
              PSTRLEN, PROTOCOL_NAME,
              RESERVED_SECTION,
-             localstate.info_hash,
+             (char*)localstate.info_hash,
              localstate.peer_id);
 }
 
@@ -37,29 +37,42 @@ int validate_handshake_str(int sockfd, char *expected_peer_id){
     char peer_id[SHA_DIGEST_LENGTH+1];
     
     if ((nbytes = receive_on_socket(sockfd, peer_handshake_str, HANDSHAKE_BUFLEN)) <= 0){
+        printf("DEBUG: nbytes received: %d\n", nbytes);
         if (nbytes < 0)
             perror("recv");
         return 0;
     }
 
-    sscanf(peer_handshake_str, "%c%18s%8s%20s%20s",
+    sscanf(peer_handshake_str, "%c%18c%8c%20c%20c",
            &pstrlen, pstr, reserved,
            info_hash, peer_id);
 
-    if (pstrlen != PSTRLEN)
+    printf("DEBUG: peer's validation string: %s\n", peer_handshake_str);
+    if (pstrlen != PSTRLEN){
+        puts("DEBUG: pstrlen is wrong");
         return 0;
+    }
 
-    if (strcmp(pstr, PROTOCOL_NAME) != 0)
+    if (strcmp(pstr, PROTOCOL_NAME) != 0){
+        printf("DEBUG: protocol name was wrong: %s\n", pstr);
         return  0;
+    }
 
-    if (strcmp(reserved, RESERVED_SECTION) != 0)
+    if (strcmp(reserved, RESERVED_SECTION) != 0){
+        puts("DEBUG: reserved section");
         return 0;
+    }
 
-    if (strcmp(info_hash, (char*) localstate.info_hash) != 0)
+    if (strcmp(info_hash, (char*) localstate.info_hash) != 0){
+        printf("info hash length: %lu\n", strlen(info_hash));
+        puts("DEBUG: info hash");
         return 0;
+    }
 
-    if (expected_peer_id != NULL && strcmp(peer_id, expected_peer_id) != 0)
+    if (expected_peer_id != NULL && strcmp(peer_id, expected_peer_id) != 0){
+        puts("DEBUG: expected peer id");
         return 0;
+    }
 
     puts("hooray! validated a peer.\n");
 
