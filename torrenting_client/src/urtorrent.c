@@ -9,6 +9,15 @@
 #include "handshake.h"
 #include "state.h"
 
+void free_peers(){
+    int i;
+    
+    for (i = 0; i < MAX_SOCKFD; i++){
+        if (localstate.peers[i] != NULL)
+            free(localstate.peers[i]);
+    }
+}
+
 int main(int argc, char *argv[]) {
     if (argc != 3){
         printf("URTorrent: a simple torrenting client\n\n"
@@ -28,6 +37,7 @@ int main(int argc, char *argv[]) {
     printf("Downloading pieces from peers...\n");
     setup_peer_connections();
 
+    free_peers();
     free_localstate_metainfo();
     be_free(metainfo);
     be_free(trackerinfo);

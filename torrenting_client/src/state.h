@@ -2,12 +2,21 @@
 
 #include "bencode/bencode.h"
 
+#define MAX_SOCKFD 1000
+
 #define HOSTNAME_BUFLEN 127
 #define IP_BUFLEN 17
 #define PORT_BUFLEN 6
 
 be_node *metainfo;
 be_node *trackerinfo;
+
+typedef struct {
+    char *peer_id;
+    char *ip;
+    int port;
+    unsigned int bitfield;
+} peer_t ;
 
 struct localstate_t {
     // process state
@@ -32,6 +41,8 @@ struct localstate_t {
 
     unsigned char **piece_hashes;
     char **piece_hash_digests;
+
+    peer_t *peers[MAX_SOCKFD];
 };
 
 struct localstate_t localstate;

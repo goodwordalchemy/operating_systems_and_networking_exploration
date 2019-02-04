@@ -93,8 +93,24 @@ int send_handshake_str(int sockfd){
 
 }
 
-int _initiate_connection_with_peer(be_node *peer){
-    int sockfd;
+void add_peer(int sockfd, int bitfield){
+    peer_t *p;
+
+    p = malloc(sizeof(p));
+    p->bitfield = bitfield;
+
+    localstate.peers[sockfd] = p;
+};
+
+
+void remove_peer(int sockfd){
+    free(localstate.peers[sockfd]);
+    localstate.peers[sockfd] = NULL;
+    close(sockfd);
+}
+
+int _initiate_connection_with_peer(be_node *peer, fd_set *fds){
+    int sockfd, bitfield;
     struct addrinfo *servinfo;
 
     char *expected_peer_id;
@@ -130,11 +146,14 @@ int _initiate_connection_with_peer(be_node *peer){
         return -1;
     }
 
-    if (receive_bitfield_message(sockfd) <= 0){
+    if ((bitfield = receive_bitfield_message(sockfd)) < 0){
         fprintf(stderr, "could not receive bitfield message from peer\n");
         close(sockfd);
         return -1;
     }
+
+    add_peer(sockfd, bitfield);
+    FD_SET(sockfd, fds);
 
     return sockfd;
 }
@@ -150,21 +169,17 @@ void initiate_connections_with_peers(fd_set *fds){
             continue;
         }
 
-        if ((sockfd = _initiate_connection_with_peer(*pl)) <= 0)
+        if ((sockfd = _initiate_connection_with_peer(*pl, fds)) <= 0)
             fprintf(stderr, "Error connecting with peer at %s:%d\n",
                     get_be_node_str(*pl, "ip"),
                     get_be_node_int(*pl, "port"));
 
-        else {
-            FD_SET(sockfd, fds);
-            // Send bitfield message
-        }
         pl++;
     }
 }
 
 int handle_connection_initiated_by_peer(int listener, fd_set *fds){
-    int newfd;
+    int newfd, bitfield;
     struct sockaddr_storage remoteaddr; // client address
     socklen_t addrlen;
 
@@ -192,7 +207,7 @@ int handle_connection_initiated_by_peer(int listener, fd_set *fds){
         return -1;
     }
 
-    if (receive_bitfield_message(newfd) <= 0){
+    if ((bitfield = receive_bitfield_message(newfd)) <= 0){
         fprintf(stderr, "could not receive bitfield message from peer\n");
         close(newfd);
         return -1;
@@ -204,6 +219,7 @@ int handle_connection_initiated_by_peer(int listener, fd_set *fds){
         return -1;
     }
 
+    add_peer(newfd, bitfield);
     FD_SET(newfd, fds);
 
     return newfd;
@@ -257,7 +273,7 @@ int setup_peer_connections(){
                     if ((nbytes = receive_on_socket(i, receive_buf, RECEIVE_BUFLEN)) <= 0){
                         if (nbytes < 0)
                             perror("recv");
-                        close(i);
+                        remove_peer(i);
                         FD_CLR(i, &master);
                     }
                     else {

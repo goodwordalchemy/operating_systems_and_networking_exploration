@@ -107,11 +107,15 @@ int send_bitfield_message(int sockfd){
 
 
 int receive_bitfield_message(int sockfd){
-    int nbytes;
+    int nbytes, bitfield, length;
+    char *bitfield_buf;
+
     int expected_msg_length = LENGTH_PREFIX_BITS + 1 + (localstate.n_pieces / 8 + 1);
     char buf[expected_msg_length + 1];
 
+
     nbytes = receive_peer_message(sockfd, buf, expected_msg_length + 1);
+
 
     printf("received bitfield message from peer length=(%d)\n", nbytes);
     int i;
