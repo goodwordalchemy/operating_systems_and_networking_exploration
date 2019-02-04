@@ -12,9 +12,6 @@ be_node *metainfo;
 be_node *trackerinfo;
 
 typedef struct {
-    char *peer_id;
-    char *ip;
-    int port;
     unsigned int bitfield;
 } peer_t ;
 

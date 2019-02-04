@@ -18,3 +18,11 @@ void print_int_cell(int value){
     print_str_cell(buf);
 }
 
+void print_horizontal_line(int width){
+    int i;
+    printf("\t");
+    for (i = 0; i < width; i++)
+        printf("%s", "-");
+    printf("\n");
+}
+

@@ -114,14 +114,6 @@ http_response_t *announce(){
     return r;
 }
 
-void print_horizontal_line(int width){
-    int i;
-    printf("\t");
-    for (i = 0; i < width; i++)
-        printf("%s", "-");
-    printf("\n");
-}
-
 void print_info_header_row(){
     int i;
 

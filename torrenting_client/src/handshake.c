@@ -8,6 +8,7 @@
 
 #include "announce.h"
 #include "be_node_utils.h"
+#include "logging_utils.h"
 #include "messages.h"
 #include "socket_helpers.h"
 #include "state.h"
@@ -241,6 +242,51 @@ int create_listener_socket(fd_set *fds){
     return listener;
 }
 
+void print_bitfield_cell(peer_t *p){
+    int i, left, cur, n_pieces;
+
+    left = COLUMN_WIDTH;
+    n_pieces = localstate.n_pieces;
+
+    for (i = 0; i < n_pieces; i++){
+        cur = p->bitfield >> (n_pieces - 1 - i) & 1;
+        printf("%d", cur);
+    }
+    printf("%*s | ", COLUMN_WIDTH - n_pieces, "");
+
+}
+
+void print_peer_bitfields(){
+    int i;
+    peer_t *p;
+    char *headers[] = {"Sockfd", "Status", "Bitfield", "Down/s", "Up/s"};
+    int n_headers = 5;
+
+    printf("Peer bitfields:\n");
+
+    printf("\t");
+    for (i = 0; i < n_headers; i++){
+        print_str_cell(headers[i]);
+    }
+    printf("\n");
+
+    print_horizontal_line(n_headers * (3 +COLUMN_WIDTH));
+
+    printf("\t");
+    for (i = 0; i<MAX_SOCKFD; i++){
+        if ((p = localstate.peers[i]) == NULL)
+            continue;
+
+        print_int_cell(i);
+        print_str_cell("0101");
+        print_bitfield_cell(p);
+        print_int_cell(0);
+        print_int_cell(0);
+    }
+    printf("\n");
+
+}
+
 int setup_peer_connections(){
     fd_set master, read_fds;
     int listener, newfd, fdmax, i, nbytes;
@@ -250,6 +296,7 @@ int setup_peer_connections(){
     FD_ZERO(&read_fds);
 
     initiate_connections_with_peers(&master);
+    print_peer_bitfields();
 
     listener = create_listener_socket(&master);
     fdmax = listener;
