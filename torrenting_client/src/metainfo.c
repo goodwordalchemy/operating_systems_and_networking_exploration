@@ -147,7 +147,10 @@ unsigned char **_get_piece_hashes(){
     pieces = malloc(sizeof(char*) * localstate.n_pieces);
 
     for (i = 0; i < localstate.n_pieces; i++){
-        pieces[i] = (unsigned char *) (pieces_concat + (i * SHA_DIGEST_LENGTH));
+        pieces[i] = malloc(sizeof(char) * (SHA_DIGEST_LENGTH));
+        memcpy(pieces[i], (unsigned char *) (pieces_concat + (i * SHA_DIGEST_LENGTH)), SHA_DIGEST_LENGTH);
+        printf("length of piece[%d]=%lu\n", i, sizeof(pieces[i]));
+        printf("length of piece[%d]=%lu\n", i, strlen((char*)pieces[i]));
     }
 
     return pieces;
@@ -264,11 +267,11 @@ void setup_metainfo(){
 void free_localstate_metainfo(){
     int i;
 
-    free(localstate.piece_hashes);
-
     for (i = 0; i < localstate.n_pieces; i++)
+        free(localstate.piece_hashes[i]);
         free(localstate.piece_hash_digests[i]);
 
+    free(localstate.piece_hashes);
     free(localstate.piece_hash_digests);
 }
 
