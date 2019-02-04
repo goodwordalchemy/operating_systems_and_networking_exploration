@@ -147,7 +147,7 @@ char **_get_piece_hashes(){
     pieces = malloc(sizeof(char*) * localstate.n_pieces);
 
     for (i = 0; i < localstate.n_pieces; i++){
-        pieces[i] = malloc(sizeof(char) * (SHA_DIGEST_LENGTH));
+        pieces[i] = malloc(sizeof(char) * (SHA_DIGEST_LENGTH + 1));
         memcpy(pieces[i], pieces_concat + (i * SHA_DIGEST_LENGTH), SHA_DIGEST_LENGTH);
         printf("length of piece[%d]=%lu\n", i, sizeof(pieces[i]));
         printf("length of piece[%d]=%lu\n", i, strlen((char*)pieces[i]));
@@ -164,7 +164,7 @@ char **_get_piece_hash_digests(){
     piece_hash_digests = malloc(sizeof(char*) * localstate.n_pieces);
 
     for (i = 0; i < localstate.n_pieces; i++){
-        buffer = malloc(sizeof(char) * SHA_DIGEST_LENGTH*2 + 1);
+        buffer = malloc(sizeof(char) * (SHA_DIGEST_LENGTH*2 + 1));
 
         hex_digest((unsigned char*)localstate.piece_hashes[i], buffer);
 

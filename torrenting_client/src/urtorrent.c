@@ -21,7 +21,7 @@ void free_peers(){
 }
 
 void cleanup(int trash){
-    clean_pieces();
+    /* clean_pieces(); */
     free_peers();
     free_localstate_metainfo();
     if (metainfo != NULL)
