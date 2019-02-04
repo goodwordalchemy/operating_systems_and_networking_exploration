@@ -66,6 +66,8 @@ int create_pieces(){
             fprintf(stderr, "Could not validate piece.\n");
             return -1;
         }
+        else
+            printf("DEBUG: hooray! validated a piece.\n");
     }
 
     return 0;
