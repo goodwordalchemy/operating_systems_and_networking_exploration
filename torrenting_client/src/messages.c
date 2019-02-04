@@ -23,7 +23,6 @@ int decode_int_from_char(char *enc, int length){
     num = 0;
     for (i = 0; i < length; i++){
         cur = (unsigned char) enc[i] << (8 * (length - i - 1));
-        printf("signed: %02x, unsigned: %02x\n", cur, (unsigned char) cur);
         num += (int) cur;
     }
 
@@ -91,14 +90,14 @@ int send_bitfield_message(int sockfd){
     for (i = 0; i < localstate.n_pieces; i++){
         piece_hash = (char*) localstate.piece_hashes[i];
         memcpy(temp_filename_buffer + strlen(filename), piece_hash, SHA_DIGEST_LENGTH + 1);
-        if (_does_file_exist(temp_filename_buffer) || i == localstate.n_pieces - 1 || i == 0)
+        if (_does_file_exist(temp_filename_buffer))
             acc += (1 << (localstate.n_pieces - 1 - i));
     }
     acc = acc << n_shift_bits;
     encode_int_as_char(acc, bf_buf, n_bitfield_bytes);
 
     // create message struct
-    msg.length = n_bitfield_bytes;
+    msg.length = n_bitfield_bytes + 1;
     msg.type = BITFIELD;
     msg.payload = bf_buf;
 
