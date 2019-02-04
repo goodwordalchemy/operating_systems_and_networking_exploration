@@ -3,8 +3,3 @@
 *.jpg
 *.torrent
 urtorrent
-run.sh
-run-tracker.sh
-run-lldb.sh
-run-leech-lldb.sh
-run-leech1.sh
