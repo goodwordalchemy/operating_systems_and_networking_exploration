@@ -10,6 +10,7 @@
 
 #include "be_node_utils.h"
 #include "filestring.h"
+#include "hash_utils.h"
 #include "ip_address.h"
 #include "metainfo.h"
 #include "state.h"
@@ -97,15 +98,6 @@ void _free_hash_pieces_array(char **hpa, int size){
     free(hpa);
 }
 
-void _hex_digest(unsigned char *hash, char *buffer){
-    int j;
-
-    for (j = 0; j < SHA_DIGEST_LENGTH; j++){
-        snprintf(buffer + (j*2), 3,
-                "%02x", *(hash + j));
-    }
-}
-
 char *_get_infodict_str(){
     char *substr, *buffer;
     filestring_t *fs;
@@ -142,7 +134,7 @@ void _get_infodict_digest(char *digest_buf){
 
     _get_infodict_hash(hash_buf);
 
-    _hex_digest(hash_buf, digest_buf);
+    hex_digest(hash_buf, digest_buf);
 }
 
 unsigned char **_get_piece_hashes(){
@@ -171,7 +163,7 @@ char **_get_piece_hash_digests(){
     for (i = 0; i < localstate.n_pieces; i++){
         buffer = malloc(sizeof(char) * SHA_DIGEST_LENGTH*2 + 1);
 
-        _hex_digest(localstate.piece_hashes[i], buffer);
+        hex_digest(localstate.piece_hashes[i], buffer);
 
         piece_hash_digests[i] = buffer;
     }
@@ -190,7 +182,7 @@ void _get_peer_id(char *buf){
 
     SHA1((unsigned char*)concat, strlen(concat), hash); 
 
-    _hex_digest(hash, (char*)inter_buf);
+    hex_digest(hash, (char*)inter_buf);
 
     inter_buf[SHA_DIGEST_LENGTH] = 0;
 

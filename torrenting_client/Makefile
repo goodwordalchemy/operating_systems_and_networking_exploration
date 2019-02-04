@@ -15,6 +15,7 @@ _DEPS=announce.h\
 	 be_node_utils.h\
 	 filestring.h\
 	 handshake.h\
+	 hash_utils.h\
 	 http_response_parse.h\
 	 ip_address.h\
 	 logging_utils.h\
@@ -30,6 +31,7 @@ _OBJS=announce.o\
 	 be_node_utils.o\
 	 filestring.o\
 	 handshake.o\
+	 hash_utils.o\
 	 http_response_parse.o\
 	 logging_utils.o\
 	 ip_address.o\

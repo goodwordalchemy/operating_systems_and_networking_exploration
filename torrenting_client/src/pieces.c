@@ -3,22 +3,27 @@
 #include <unistd.h>
 
 #include "filestring.h"
+#include "hash_utils.h"
 #include "state.h"
 
-int validate_piece(char *piece_hash){
+#define HEX_DIGEST_BUFLEN ((SHA_DIGEST_LENGTH * 2) + 1)
+
+int validate_piece(char *piece_digest){
     int i;
     filestring_t *fs;
-    int piece_size = localstate.file_size / localstate.n_pieces;
-    char buf[piece_size + 1];
     unsigned char hash_buf[SHA_DIGEST_LENGTH+1];
+    char digest_buf[HEX_DIGEST_BUFLEN];
 
-    fs = read_file_to_string(piece_hash);
-
+    fs = read_file_to_string(piece_digest);
 
     SHA1((unsigned char *)fs->data, fs->length, hash_buf); 
 
-    for (i = 0; i < SHA_DIGEST_LENGTH; i++)
-        if (piece_hash[i] != (char) hash_buf[i])
+    free(fs);
+
+    hex_digest(hash_buf, digest_buf);
+
+    for (i = 0; i < HEX_DIGEST_BUFLEN; i++)
+        if (piece_digest[i] != digest_buf[i])
             return 0;
 
     return 1;
@@ -29,13 +34,16 @@ int create_pieces(){
     FILE *target, *tmp;
     int piece_size = localstate.file_size / localstate.n_pieces;
     char buf[piece_size + 1];
-    char *cur_piece_hash;
+    char *cur_piece_digest;
 
     target = fopen(localstate.file_name, "r");
 
     for (i = 0; i < localstate.n_pieces; i++){
-        cur_piece_hash = (char*) localstate.piece_hashes[i];
-        tmp = fopen(cur_piece_hash, "w");
+        cur_piece_digest = localstate.piece_hash_digests[i];
+        if ((tmp = fopen(cur_piece_digest, "w")) == NULL){
+            perror("fopen while sharding target");
+            return -1;
+        }
 
          /* If your file is less than 1000 bytes, fread(a, 1, 1000, stdin) 
           * (read 1000 elements of 1 byte each) will still copy all the bytes 
@@ -54,7 +62,7 @@ int create_pieces(){
             return -1;
         }
 
-        if (!validate_piece(cur_piece_hash)){
+        if (!validate_piece(cur_piece_digest)){
             fprintf(stderr, "Could not validate piece.\n");
             return -1;
         }
@@ -66,8 +74,10 @@ int create_pieces(){
 void clean_pieces(){
     int i;
 
+    printf("DEBUG: cleaning up pieces\n");
     for (i = 0; i < localstate.n_pieces; i++){
-        if (unlink((char *)localstate.piece_hashes[i]) < 0)
+        printf("trying to unlink this hash digest: %s\n", localstate.piece_hash_digests[i]);
+        if (unlink(localstate.piece_hash_digests[i]) < 0)
             perror("unlink");
     }
 }

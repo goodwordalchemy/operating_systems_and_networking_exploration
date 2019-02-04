@@ -23,8 +23,10 @@ void free_peers(){
 void cleanup(int trash){
     free_peers();
     free_localstate_metainfo();
-    be_free(metainfo);
-    be_free(trackerinfo);
+    if (metainfo != NULL)
+        be_free(metainfo);
+    if (trackerinfo != NULL)
+        be_free(trackerinfo);
     clean_pieces();
     exit(0);
 }
