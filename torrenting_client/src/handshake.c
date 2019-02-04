@@ -209,7 +209,7 @@ int handle_connection_initiated_by_peer(int listener, fd_set *fds){
         return -1;
     }
 
-    if ((bitfield = receive_bitfield_message(newfd)) <= 0){
+    if ((bitfield = receive_bitfield_message(newfd)) < 0){
         fprintf(stderr, "could not receive bitfield message from peer\n");
         close(newfd);
         return -1;
