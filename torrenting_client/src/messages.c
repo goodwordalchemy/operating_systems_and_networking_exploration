@@ -120,17 +120,17 @@ int receive_bitfield_message(int sockfd){
     int n_shift_bits = 8 - (localstate.n_pieces % 8);
     int bitfield, length;
     char msg_type;
-    char fmt[12];
     char length_buf[5];
     char bf_buf[n_bitfield_bytes+1];
 
     if ((nbytes = receive_peer_message(sockfd, buf, expected_msg_length + 1)) <= 0)
         return -1;
 
-    printf("received bitfield message from peer length=(%d)\n", nbytes);
-    for (i = 0; i < nbytes; i++)
-        printf("%02x", (unsigned char) buf[i]);
-    printf("\n");
+    // For debugging
+    /* printf("received bitfield message from peer length=(%d)\n", nbytes); */
+    /* for (i = 0; i < nbytes; i++) */
+    /*     printf("%02x", (unsigned char) buf[i]); */
+    /* printf("\n"); */
 
     for (i = 0; i < LENGTH_PREFIX_BITS; i++)
         length_buf[i] = buf[i];
@@ -139,11 +139,6 @@ int receive_bitfield_message(int sockfd){
 
     for (i = 0; i < n_bitfield_bytes; i++)
         bf_buf[i] = buf[i + LENGTH_PREFIX_BITS + 1];
-
-    printf("DEBUG: length: ");
-    for (i = 0; i < LENGTH_PREFIX_BITS; i++)
-        printf("%02x", (unsigned char) length_buf[i]);
-    printf("\n");
 
     length = decode_int_from_char(length_buf, LENGTH_PREFIX_BITS);
     if (length != n_bitfield_bytes + 1){
@@ -161,7 +156,6 @@ int receive_bitfield_message(int sockfd){
     if ((bitfield & ((int) pow((double) 2, n_shift_bits) - 1)) > 0)
         fprintf(stderr, "trailing zeros were set in peers bitfield\n");
 
-    printf("DEBUG: bitfield message from peer all good: %d\n", bitfield);
     return bitfield;
 }
 

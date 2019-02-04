@@ -5,6 +5,7 @@
 
 #include "be_node_utils.h"
 #include "http_response_parse.h"
+#include "logging_utils.h"
 #include "state.h"
 #include "socket_helpers.h"
 
@@ -14,8 +15,6 @@
 #define EVENT_BUFLEN 10
 #define REQUEST_BUFLEN 255
 #define RESPONSE_BUFLEN 8192
-
-#define COLUMN_WIDTH 23
 
 
 char *announce_keys[] = {"complete", "incomplete", "interval", "min interval"};
@@ -121,21 +120,6 @@ void print_horizontal_line(int width){
     for (i = 0; i < width; i++)
         printf("%s", "-");
     printf("\n");
-}
-
-void print_str_cell(char *value){
-    int indent;
-
-    indent = COLUMN_WIDTH - strlen(value);
-    printf("%s%*s | ", value, indent, "");
-}
-
-void print_int_cell(int value){
-    char buf[COLUMN_WIDTH];
-
-    snprintf(buf, COLUMN_WIDTH, "%d", value);
-
-    print_str_cell(buf);
 }
 
 void print_info_header_row(){
