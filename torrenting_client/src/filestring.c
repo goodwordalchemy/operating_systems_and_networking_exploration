@@ -1,9 +1,21 @@
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
 #include "filestring.h"
+
+int does_file_exist(char *filename){
+    struct stat buf;
+    if (stat(filename, &buf) == -1){
+        if (errno != ENOENT)
+            perror("stat");
+        return 0;
+    }
+    return 1;
+}
+
 
 int get_file_length(char *filepath){
     struct stat buf;

@@ -5,6 +5,7 @@
 #include <string.h>
 #include <sys/stat.h>
 
+#include "filestring.h"
 #include "messages.h"
 #include "socket_helpers.h"
 #include "state.h"
@@ -61,16 +62,6 @@ int receive_peer_message(int sockfd, char *buf, int length){
     return nbytes;
 }
 
-int _does_file_exist(char *filename){
-    struct stat buf;
-    if (stat(filename, &buf) == -1){
-        if (errno != ENOENT)
-            perror("stat");
-        return 0;
-    }
-    return 1;
-}
-
 int send_bitfield_message(int sockfd){
     int i, acc;
     char *piece_hash;
@@ -91,7 +82,7 @@ int send_bitfield_message(int sockfd){
     for (i = 0; i < localstate.n_pieces; i++){
         piece_hash = (char*) localstate.piece_hashes[i];
         memcpy(temp_filename_buffer + strlen(filename), piece_hash, SHA_DIGEST_LENGTH + 1);
-        if (_does_file_exist(temp_filename_buffer))
+        if (does_file_exist(temp_filename_buffer))
             acc += (1 << (localstate.n_pieces - 1 - i));
     }
     acc = acc << n_shift_bits;

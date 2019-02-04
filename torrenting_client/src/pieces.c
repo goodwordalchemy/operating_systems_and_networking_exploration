@@ -75,11 +75,11 @@ int create_pieces(){
 
 void clean_pieces(){
     int i;
+    char *cur_digest; 
 
-    printf("DEBUG: cleaning up pieces\n");
     for (i = 0; i < localstate.n_pieces; i++){
-        printf("trying to unlink this hash digest: %s\n", localstate.piece_hash_digests[i]);
-        if (unlink(localstate.piece_hash_digests[i]) < 0)
+        cur_digest = localstate.piece_hash_digests[i];
+        if (does_file_exist(cur_digest) && unlink(cur_digest) < 0)
             perror("unlink");
     }
 }
