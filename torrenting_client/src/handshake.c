@@ -95,6 +95,8 @@ int send_handshake_str(int sockfd){
 
 void add_peer(int sockfd, int bitfield){
     peer_t *p;
+    
+    printf("adding peer: bitfield = %d\n", bitfield);
 
     p = malloc(sizeof(p));
     p->bitfield = bitfield;

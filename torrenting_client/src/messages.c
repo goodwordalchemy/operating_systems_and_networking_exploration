@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -107,15 +108,22 @@ int send_bitfield_message(int sockfd){
 
 
 int receive_bitfield_message(int sockfd){
-    int nbytes, bitfield, length;
-    char *bitfield_buf;
-
-    int expected_msg_length = LENGTH_PREFIX_BITS + 1 + (localstate.n_pieces / 8 + 1);
+    // For receiving messsage
+    int nbytes;
+    int n_bitfield_bytes = (localstate.n_pieces / 8 + 1);
+    int expected_msg_length = LENGTH_PREFIX_BITS + 1 + n_bitfield_bytes;
     char buf[expected_msg_length + 1];
 
+    // for parsing message
+    int n_shift_bits = 8 - (localstate.n_pieces % 8);
+    int bitfield, length;
+    char msg_type;
+    char fmt[10];
+    char length_buf[4];
+    char bf_buf[n_bitfield_bytes];
 
-    nbytes = receive_peer_message(sockfd, buf, expected_msg_length + 1);
-
+    if ((nbytes = receive_peer_message(sockfd, buf, expected_msg_length + 1)) <= 0)
+        return -1;
 
     printf("received bitfield message from peer length=(%d)\n", nbytes);
     int i;
@@ -123,7 +131,25 @@ int receive_bitfield_message(int sockfd){
         printf("%02x", (unsigned char) buf[i]);
     printf("\n");
 
+    sprintf(fmt, "%%4c%%c%%%dc", n_bitfield_bytes);
+    sscanf(buf, fmt, length_buf, &msg_type, bf_buf);
 
-    return nbytes;
+    length = decode_int_from_char(length_buf, LENGTH_PREFIX_BITS);
+    if (length != n_bitfield_bytes + 1){
+        fprintf(stderr, "Expected length prefix %d.  Instead got %d\n", n_bitfield_bytes + 1, length);
+        return -1;
+    }
+
+    if (msg_type != BITFIELD){
+        fprintf(stderr, "expected message type of BITFIELD=5 from peer. Instead got %d\n", msg_type);
+        return -1;
+    }
+
+    bitfield = decode_int_from_char(bf_buf, n_bitfield_bytes);
+
+    if ((bitfield & ((int) pow((double) 2, n_shift_bits) - 1)) > 0)
+        fprintf(stderr, "trailing zeros were set in peers bitfield\n");
+
+    return bitfield;
 }
 
