@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 #include "filestring.h"
@@ -16,11 +17,15 @@ int validate_piece(char *piece_digest){
 
     fs = read_file_to_string(piece_digest);
 
+    printf("validating piece: %s, length: %d\n", piece_digest, fs->length);
+
     SHA1((unsigned char *)fs->data, fs->length, hash_buf); 
 
     free(fs);
 
     hex_digest(hash_buf, digest_buf);
+
+    printf("\tcalculated digest: %s\n", digest_buf);
 
     for (i = 0; i < HEX_DIGEST_BUFLEN; i++)
         if (piece_digest[i] != digest_buf[i])
@@ -30,7 +35,7 @@ int validate_piece(char *piece_digest){
 }
 
 int create_pieces(){
-    int i;
+    int i, nbytes;
     FILE *target, *tmp;
     int piece_size = localstate.file_size / localstate.n_pieces;
     char buf[piece_size + 1];
@@ -39,6 +44,8 @@ int create_pieces(){
     target = fopen(localstate.file_name, "r");
 
     for (i = 0; i < localstate.n_pieces; i++){
+        memset(buf, 0, piece_size + 1);
+
         cur_piece_digest = localstate.piece_hash_digests[i];
         if ((tmp = fopen(cur_piece_digest, "w")) == NULL){
             perror("fopen while sharding target");
@@ -50,7 +57,9 @@ int create_pieces(){
           * until EOF. On the other hand, the result of fread(a, 1000, 1, stdin) 
           * (read 1 1000-byte element) stored in a is unspecified, because there is 
           * not enough data to finish reading the 'first' (and only) 1000 byte element. */
-        if ((fread(buf, 1, piece_size, target)) == 0){
+        if ((nbytes = fread(buf, 1, piece_size, target)) == piece_size);
+        else if (nbytes == localstate.last_piece_size);
+        else {
             perror("fread while sharding target");
             fclose(tmp);
             return -1;
@@ -68,7 +77,11 @@ int create_pieces(){
         }
         else
             printf("DEBUG: hooray! validated a piece.\n");
+
+        fclose(tmp);
     }
+
+    fclose(target);
 
     return 0;
 }
