@@ -20,6 +20,7 @@ _DEPS=announce.h\
 	 logging_utils.h\
 	 metainfo.h\
 	 messages.h\
+	 pieces.h\
 	 socket_helpers.h\
 	 state.h
 DEPS=$(patsubst %, $(SRCDIR)/%, $(_DEPS))
@@ -34,6 +35,7 @@ _OBJS=announce.o\
 	 ip_address.o\
 	 metainfo.o\
 	 messages.o\
+	 pieces.o\
 	 socket_helpers.o\
 	 urtorrent.o
 OBJS=$(patsubst %, $(OBJDIR)/%, $(_OBJS))

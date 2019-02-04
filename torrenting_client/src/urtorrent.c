@@ -1,3 +1,4 @@
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -7,6 +8,7 @@
 #include "announce.h"
 #include "metainfo.h"
 #include "handshake.h"
+#include "pieces.h"
 #include "state.h"
 
 void free_peers(){
@@ -16,6 +18,15 @@ void free_peers(){
         if (localstate.peers[i] != NULL)
             free(localstate.peers[i]);
     }
+}
+
+void cleanup(int trash){
+    free_peers();
+    free_localstate_metainfo();
+    be_free(metainfo);
+    be_free(trackerinfo);
+    clean_pieces();
+    exit(0);
 }
 
 int main(int argc, char *argv[]) {
@@ -28,8 +39,18 @@ int main(int argc, char *argv[]) {
     localstate.client_port = argv[1];
     localstate.metainfo_filename = argv[2];
 
+    if (signal(SIGINT, cleanup) == SIG_ERR)
+        perror("signal");
+
     printf("Parsing torrent file...\n");
     print_metainfo();
+
+
+    if (localstate.is_seeder){
+        printf("You are a seeder.  Creating pieces.\n");
+        if (create_pieces() == -1)
+            cleanup(0);
+    }
 
     printf("Registering with tracker...\n");
     print_announce();
@@ -37,10 +58,8 @@ int main(int argc, char *argv[]) {
     printf("Downloading pieces from peers...\n");
     setup_peer_connections();
 
-    free_peers();
-    free_localstate_metainfo();
-    be_free(metainfo);
-    be_free(trackerinfo);
+    printf("Cleaning up...\n");
+    cleanup(0);
 
     return 0;
 }

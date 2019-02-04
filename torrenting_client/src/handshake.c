@@ -63,6 +63,8 @@ void print_peer_bitfields(){
     }
     printf("\n");
 
+    print_horizontal_line(n_headers * (3 +COLUMN_WIDTH));
+
 }
 
 void write_handshake_str(char *buf){
