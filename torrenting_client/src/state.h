@@ -36,7 +36,7 @@ struct localstate_t {
     char info_hash_digest[2*SHA_DIGEST_LENGTH + 1];
     char peer_id[SHA_DIGEST_LENGTH + 1];
 
-    unsigned char **piece_hashes;
+    char **piece_hashes;
     char **piece_hash_digests;
 
     peer_t *peers[MAX_SOCKFD];

@@ -80,7 +80,7 @@ int send_bitfield_message(int sockfd){
     memcpy(temp_filename_buffer, filename, strlen(filename));
     acc = 0;
     for (i = 0; i < localstate.n_pieces; i++){
-        piece_hash = (char*) localstate.piece_hashes[i];
+        piece_hash = localstate.piece_hashes[i];
         memcpy(temp_filename_buffer + strlen(filename), piece_hash, SHA_DIGEST_LENGTH + 1);
         if (does_file_exist(temp_filename_buffer))
             acc += (1 << (localstate.n_pieces - 1 - i));
