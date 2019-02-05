@@ -149,8 +149,6 @@ char **_get_piece_hashes(){
     for (i = 0; i < localstate.n_pieces; i++){
         pieces[i] = malloc(sizeof(char) * (SHA_DIGEST_LENGTH + 1));
         memcpy(pieces[i], pieces_concat + (i * SHA_DIGEST_LENGTH), SHA_DIGEST_LENGTH);
-        printf("length of piece[%d]=%lu\n", i, sizeof(pieces[i]));
-        printf("length of piece[%d]=%lu\n", i, strlen((char*)pieces[i]));
     }
 
     return pieces;
