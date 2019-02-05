@@ -4,6 +4,7 @@
 #include <string.h>
 #include <sys/select.h>
 #include <sys/socket.h>
+#include <sys/time.h>
 #include <unistd.h>
 
 #include "announce.h"
@@ -12,6 +13,8 @@
 #include "messages.h"
 #include "socket_helpers.h"
 #include "state.h"
+
+#define SELECT_TIMEOUT 5
 
 #define PSTRLEN 18
 #define PROTOCOL_NAME "URTorrent protocol"
@@ -135,7 +138,7 @@ void remove_peer(int sockfd){
 }
 
 int _initiate_connection_with_peer(be_node *peer, fd_set *fds){
-    int sockfd, bitfield;
+    int sockfd;
     struct addrinfo *servinfo;
 
     char *expected_peer_id;
@@ -197,7 +200,7 @@ void initiate_connections_with_peers(fd_set *fds){
 }
 
 int handle_connection_initiated_by_peer(int listener, fd_set *fds){
-    int newfd, bitfield;
+    int newfd;
     struct sockaddr_storage remoteaddr; // client address
     socklen_t addrlen;
 
@@ -251,8 +254,9 @@ int create_listener_socket(fd_set *fds){
 }
 
 int setup_peer_connections(){
+    struct timeval select_timeout;
     fd_set master, read_fds;
-    int listener, newfd, i, nbytes;
+    int listener, newfd, i;
 
     FD_ZERO(&master);
     FD_ZERO(&read_fds);
@@ -264,13 +268,16 @@ int setup_peer_connections(){
     listener = create_listener_socket(&master);
     localstate.max_sockfd = listener;
 
+    select_timeout.tv_sec = SELECT_TIMEOUT;
+    select_timeout.tv_usec = 0;
+
     for (;;){
         send_piece_requests();
 
         // handle incoming messagesz
         read_fds = master;
 
-        if (select(localstate.max_sockfd+1, &read_fds, NULL, NULL, NULL) == -1){
+        if (select(localstate.max_sockfd+1, &read_fds, NULL, NULL, &select_timeout) == -1){
             perror("select");
             return -1;
         } 

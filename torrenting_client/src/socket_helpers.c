@@ -131,7 +131,6 @@ int create_connected_socket(struct addrinfo *servinfo)
         fprintf(stderr, "client: failed to connect\n");
         return -1;
     }
-    printf("DEBUG: create connected socket about to return\n");
 
     return sockfd;
 }
