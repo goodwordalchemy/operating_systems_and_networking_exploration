@@ -42,6 +42,7 @@ struct localstate_t {
     char **piece_hash_digests;
 
     peer_t *peers[MAX_SOCKFD];
+    int max_sockfd;
 };
 
 struct localstate_t localstate;

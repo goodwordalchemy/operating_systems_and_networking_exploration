@@ -327,7 +327,7 @@ int create_listener_socket(fd_set *fds){
 
 int setup_peer_connections(){
     fd_set master, read_fds;
-    int listener, newfd, fdmax, i, nbytes;
+    int listener, newfd, i, nbytes;
     char receive_buf[RECEIVE_BUFLEN];
 
     FD_ZERO(&master);
@@ -339,7 +339,7 @@ int setup_peer_connections(){
     print_peer_bitfields();
 
     listener = create_listener_socket(&master);
-    fdmax = listener;
+    localstate.max_sockfd = listener;
 
     for (;;){
         send_piece_requests();
@@ -347,19 +347,19 @@ int setup_peer_connections(){
         // handle incoming messagesz
         read_fds = master;
 
-        if (select(fdmax+1, &read_fds, NULL, NULL, NULL) == -1){
+        if (select(localstate.max_sockfd+1, &read_fds, NULL, NULL, NULL) == -1){
             perror("select");
             return -1;
         } 
 
         // loop through sockets looking for data to read
-        for (i = 0; i <= fdmax; i++){
+        for (i = 0; i <= localstate.max_sockfd; i++){
             if (FD_ISSET(i, &read_fds)){ // found socket with data to read 
                 if (i == listener){
                     puts("DEBUG: peer wants to share with me!");
                     newfd = handle_connection_initiated_by_peer(i, &master);
-                    if (newfd > fdmax)
-                        fdmax = newfd;
+                    if (newfd > localstate.max_sockfd)
+                        localstate.max_sockfd = newfd;
                 }
                 else {
                     if ((nbytes = receive_on_socket(i, receive_buf, RECEIVE_BUFLEN)) <= 0){
