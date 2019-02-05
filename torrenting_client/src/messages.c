@@ -1,5 +1,6 @@
 #include <errno.h>
 #include <math.h>
+#include <time.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -11,6 +12,10 @@
 #include "state.h"
 
 #define LENGTH_PREFIX_BITS 4
+
+unsigned long get_timestamp(){
+    return (unsigned long)time(NULL);
+}
 
 void encode_int_as_char(int num, char *buf, int length){
     int i;
@@ -162,3 +167,42 @@ int receive_bitfield_message(int sockfd){
     return bitfield;
 }
 
+
+int choose_a_piece_to_request(){
+    int bitfield, i;
+
+    bitfield = what_is_my_bitfield() >> how_many_shift_bits_in_my_bitfield();
+
+    for (i = 0; i < localstate.n_pieces; i++)
+        if ((int)pow((double)2, i) & bitfield)
+            break;
+
+
+    return i;
+}
+
+int send_request_message(int sockfd){
+    int requesting_piece;
+    msg_t msg;
+    char data[12];
+    
+    requesting_piece = choose_a_piece_to_request();
+
+    encode_int_as_char(requesting_piece, data, 4);
+    encode_int_as_char(0, data + 4, 4);
+    encode_int_as_char(localstate.piece_length, data + 8, 4);
+
+    msg.length = 13;
+    msg.type = REQUEST;
+    msg.payload = data;
+
+    if (send_peer_message(sockfd, &msg) <= 0){
+        fprintf(stderr, "could not send piece request.");
+        return 0;
+    }
+
+    localstate.peers[sockfd]->last_contact = get_timestamp();
+    localstate.peers[sockfd]->requested_piece = requesting_piece;
+
+    return 1;
+}
