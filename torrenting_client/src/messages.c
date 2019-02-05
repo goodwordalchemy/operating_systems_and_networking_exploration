@@ -246,6 +246,35 @@ void send_piece_requests(){
     }
 }
 
+int handle_piece_request(int sockfd, msg_t *msg){
+    int index, begin, length;
+
+    if (msg->length != 13){
+        fprintf(stderr, "Request message did not specify correct length.\n");
+        return -1;
+    }
+
+    index = decode_int_from_char(msg->payload, 4);
+    begin = decode_int_from_char(msg->payload + 4, 4);
+    length = decode_int_from_char(msg->payload + 8, 4);
+    
+    if (begin != 0){
+        fprintf(stderr, "Have not implemented sending blocks that aren't the first in their piece\n");
+        return -1;
+    }
+
+    if (length == localstate.piece_length);
+    else if (length == localstate.last_piece_size);
+    else {
+        fprintf(stderr, "Have not implemented sending blocks not equal to the piece size yet\n");
+        return -1;
+    }
+
+    printf("Received request for piece at index %d.  Need to fulfill it", index);
+
+    return 0;
+}
+
 int receive_peer_message(int sockfd){
     msg_t msg;
     int nbytes, msg_type, i;
@@ -293,7 +322,8 @@ int receive_peer_message(int sockfd){
             if (handle_bitfield_message(sockfd, &msg) == -1)
                 return -1;
         case (REQUEST):
-            break;
+            if (handle_piece_request(sockfd, &msg) == -1)
+                return -1;
         case (PIECE):
             break;
         case (CANCEL):

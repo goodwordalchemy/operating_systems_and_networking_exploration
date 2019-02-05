@@ -37,11 +37,7 @@ typedef struct msg {
 int receive_peer_message(int sockfd);
 
 int send_bitfield_message(int sockfd);
-int receive_bitfield_message(int sockid);
-
-
 int what_is_my_bitfield();
 int how_many_shift_bits_in_my_bitfield();
-
 
 void send_piece_requests();
