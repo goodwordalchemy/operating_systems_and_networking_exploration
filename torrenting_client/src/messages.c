@@ -156,28 +156,21 @@ void add_peer(int sockfd, int bitfield){
 
 int handle_bitfield_message(int sockfd, msg_t *msg){
     // If bitfield message validates, then it will set the bitfield field on the peer struct at the sockfd.
-    int i;
+    int bitfield;
 
     // For receiving messsage
-    int nbytes;
     int n_bitfield_bytes = how_many_bytes_in_my_bitfield();;
-    int expected_msg_length = LENGTH_PREFIX_BITS + 1 + n_bitfield_bytes;
-    char buf[expected_msg_length + 1];
 
     // for parsing message
     int n_shift_bits = 8 - (localstate.n_pieces % 8);
-    int bitfield, length;
-    char msg_type;
-    char length_buf[5];
-    char bf_buf[n_bitfield_bytes+1];
 
     if (msg->length != n_bitfield_bytes + 1){
-        fprintf(stderr, "Expected length prefix %d.  Instead got %d\n", n_bitfield_bytes + 1, length);
+        fprintf(stderr, "Expected length prefix %d.  Instead got %d\n", n_bitfield_bytes + 1, msg->length);
         return -1;
     }
 
     if (msg->type != BITFIELD){
-        fprintf(stderr, "expected message type of BITFIELD=5 from peer. Instead got %d\n", msg_type);
+        fprintf(stderr, "expected message type of BITFIELD=5 from peer. Instead got %d\n", msg->type);
         return -1;
     }
 
