@@ -20,14 +20,14 @@
 #define HANDSHAKE_BUFLEN (49 + PSTRLEN + 1)
 #define RESERVED_SECTION "00000000"
 
-void print_bitfield_cell(peer_t *p){
+void print_bitfield_cell(int bitfield){
     int i, left, cur, n_pieces;
 
     left = COLUMN_WIDTH;
     n_pieces = localstate.n_pieces;
 
     for (i = 0; i < n_pieces; i++){
-        cur = p->bitfield >> (n_pieces - 1 - i) & 1;
+        cur = bitfield >> (n_pieces - 1 - i) & 1;
         printf("%d", cur);
     }
     printf("%*s | ", COLUMN_WIDTH - n_pieces, "");
@@ -57,14 +57,48 @@ void print_peer_bitfields(){
 
         print_int_cell(i);
         print_str_cell("0101");
-        print_bitfield_cell(p);
+        print_bitfield_cell(p->bitfield);
         print_int_cell(0);
         print_int_cell(0);
     }
     printf("\n");
 
     print_horizontal_line(n_headers * (3 +COLUMN_WIDTH));
+}
 
+void print_my_status(){
+    int i, bitfield, cur, n_pieces, downloaded, left, uploaded;
+    char *headers[] = {"Bitfield", "Downloaded", "Uploaded", "Left"};
+    int n_headers = 4;
+    
+    printf("My status:\n");
+    printf("\t");
+    for (i = 0; i < n_headers; i++){
+        print_str_cell(headers[i]);
+    }
+    printf("\n");
+
+    print_horizontal_line(n_headers * (3 +COLUMN_WIDTH));
+
+    n_pieces = localstate.n_pieces;
+    bitfield = what_is_my_bitfield();
+
+    printf("\t");
+    downloaded = 0;
+    for (i = 0; i < n_pieces; i++){
+        cur = bitfield >> (n_pieces - 1 - i) & 1;
+        printf("%d", cur);
+        if (cur)
+            downloaded++;
+    }
+    printf("%*s | ", COLUMN_WIDTH - n_pieces, "");
+
+    print_int_cell(downloaded);
+    print_int_cell(0); // Nobody has uploaded anything yet!
+    print_int_cell(n_pieces - downloaded);
+    printf("\n");
+    
+    print_horizontal_line(n_headers * (3 +COLUMN_WIDTH));
 }
 
 void write_handshake_str(char *buf){
@@ -297,6 +331,8 @@ int setup_peer_connections(){
     FD_ZERO(&read_fds);
 
     initiate_connections_with_peers(&master);
+
+    print_my_status();
     print_peer_bitfields();
 
     listener = create_listener_socket(&master);

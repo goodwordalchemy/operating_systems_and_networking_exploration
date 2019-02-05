@@ -36,3 +36,6 @@ typedef struct msg {
 
 int send_bitfield_message(int sockfd);
 int receive_bitfield_message(int sockid);
+
+
+int what_is_my_bitfield();
