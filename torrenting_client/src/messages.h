@@ -34,6 +34,8 @@ typedef struct msg {
     char *payload;
 } msg_t;
 
+int receive_peer_message(int sockfd, char *buf, int length);
+
 int send_bitfield_message(int sockfd);
 int receive_bitfield_message(int sockid);
 

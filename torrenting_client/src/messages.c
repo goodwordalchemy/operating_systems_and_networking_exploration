@@ -167,33 +167,11 @@ int receive_bitfield_message(int sockfd){
     return bitfield;
 }
 
-
-int choose_a_piece_to_request(){
-    int bitfield, i;
-
-    bitfield = what_is_my_bitfield() >> how_many_shift_bits_in_my_bitfield();
-
-    for (i = 0; i < localstate.n_pieces; i++)
-        if ((int)pow((double)2, i) & bitfield)
-            break;
-
-
-    return i;
-}
-
-int choose_a_peer_to_request_from(){
-
-    return 0;
-}
-
-int send_request_message(int sockfd){
-    int requesting_piece;
+int send_request_message(int sockfd, int piece){
     msg_t msg;
     char data[12];
     
-    requesting_piece = choose_a_piece_to_request();
-
-    encode_int_as_char(requesting_piece, data, 4);
+    encode_int_as_char(piece, data, 4);
     encode_int_as_char(0, data + 4, 4);
     encode_int_as_char(localstate.piece_length, data + 8, 4);
 
@@ -207,14 +185,47 @@ int send_request_message(int sockfd){
     }
 
     localstate.peers[sockfd]->last_contact = get_timestamp();
-    localstate.peers[sockfd]->requested_piece = requesting_piece;
+    localstate.peers[sockfd]->requested_piece = piece;
 
     return 1;
 }
 
-void send_piece_requests(){
-    int i;
-    for (i = 0; i < MAX_SOCKFD; i++){
+int choose_a_piece_to_request(){
+    int bitfield, i, power;
+
+    bitfield = what_is_my_bitfield() >> how_many_shift_bits_in_my_bitfield();
+
+    for (i = 0; i < localstate.n_pieces; i++){
+        power = (int)pow((double)2, i);
+        if (power & bitfield)
+            continue;
+        return i;
     }
-    printf("THIS IS NOT IMLEMENTED YET");
+
+    return -1;
+}
+
+int choose_a_peer_to_request_from(){
+    int i;
+    peer_t *p;
+    for (i = 0; i < localstate.max_sockfd; i++)
+        if ((p = localstate.peers[i]) == NULL)
+            continue;
+        printf("DEBUG: peer address %p\n", p);
+        if (p->requested_piece == -1)
+            return i;
+    return -1;
+}
+
+void send_piece_requests(){
+    int rpeer, piece;
+
+    while ((piece = choose_a_piece_to_request()) != -1){
+        printf("DEBUG: requesting piece...%d\n", piece);
+        if ((rpeer = choose_a_peer_to_request_from()) == -1)
+            break;
+        printf("DEBUG: from peer=%d\n", rpeer);
+        send_request_message(rpeer, piece);
+
+    }
 }
