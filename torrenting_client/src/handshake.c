@@ -342,6 +342,9 @@ int setup_peer_connections(){
     fdmax = listener;
 
     for (;;){
+        send_piece_requests();
+
+        // handle incoming messagesz
         read_fds = master;
 
         if (select(fdmax+1, &read_fds, NULL, NULL, NULL) == -1){

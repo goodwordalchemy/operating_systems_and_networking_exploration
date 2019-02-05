@@ -181,6 +181,11 @@ int choose_a_piece_to_request(){
     return i;
 }
 
+int choose_a_peer_to_request_from(){
+
+    return 0;
+}
+
 int send_request_message(int sockfd){
     int requesting_piece;
     msg_t msg;
@@ -205,4 +210,11 @@ int send_request_message(int sockfd){
     localstate.peers[sockfd]->requested_piece = requesting_piece;
 
     return 1;
+}
+
+void send_piece_requests(){
+    int i;
+    for (i = 0; i < MAX_SOCKFD; i++){
+    }
+    printf("THIS IS NOT IMLEMENTED YET");
 }
