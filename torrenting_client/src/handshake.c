@@ -57,7 +57,7 @@ void print_peer_bitfields(){
 
         print_int_cell(i);
         print_str_cell("0101");
-        print_bitfield_cell(p->bitfield);
+        print_bitfield_cell(p->bitfield >> how_many_shift_bits_in_my_bitfield());
         print_int_cell(0);
         print_int_cell(0);
     }
@@ -81,7 +81,7 @@ void print_my_status(){
     print_horizontal_line(n_headers * (3 +COLUMN_WIDTH));
 
     n_pieces = localstate.n_pieces;
-    bitfield = what_is_my_bitfield();
+    bitfield = what_is_my_bitfield() >> how_many_shift_bits_in_my_bitfield();
 
     printf("\t");
     downloaded = 0;
@@ -93,9 +93,12 @@ void print_my_status(){
     }
     printf("%*s | ", COLUMN_WIDTH - n_pieces, "");
 
+    uploaded = 0; // Nobody has uploaded anything to anyone yet!
+    left = n_pieces - downloaded;
+
     print_int_cell(downloaded);
-    print_int_cell(0); // Nobody has uploaded anything yet!
-    print_int_cell(n_pieces - downloaded);
+    print_int_cell(uploaded); 
+    print_int_cell(left);
     printf("\n");
     
     print_horizontal_line(n_headers * (3 +COLUMN_WIDTH));
