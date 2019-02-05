@@ -162,15 +162,19 @@ int validate_handshake_str(int sockfd, char *expected_peer_id){
     return 1;
 }
 
-void handle_message_from_peer(i){
+void handle_message_from_peer(int sockfd){
     int nbytes;
     // (length prefix) (msg type) (index) (begin) (block) in "piece" message
     int longest_possible_length = 4 + 1 + 4 + 4 + localstate.piece_length; 
     char receive_buffer[longest_possible_length + 1];
 
-    printf("bytes recieved on socket %d\n", i);
-    receive_peer_message(i, receive_buffer, longest_possible_length);
-    printf("This is the message received: %s\n", receive_buffer);
+    printf("bytes recieved on socket %d\n", sockfd);
+    receive_peer_message(sockfd, receive_buffer, longest_possible_length);
+    printf("These are the first 100 bytes of the message received:\n");
+    int i;
+    for (i = 0; i < 100; i++)
+        printf("%02x", receive_buffer[i]);
+    printf("\n");
 }
 
 int send_handshake_str(int sockfd){

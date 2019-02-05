@@ -208,12 +208,12 @@ int choose_a_piece_to_request(){
 int choose_a_peer_to_request_from(){
     int i;
     peer_t *p;
-    for (i = 0; i < localstate.max_sockfd; i++)
+    for (i = 0; i < localstate.max_sockfd; i++){
         if ((p = localstate.peers[i]) == NULL)
             continue;
-        printf("DEBUG: peer address %p\n", p);
         if (p->requested_piece == -1)
             return i;
+    }
     return -1;
 }
 
@@ -221,11 +221,8 @@ void send_piece_requests(){
     int rpeer, piece;
 
     while ((piece = choose_a_piece_to_request()) != -1){
-        printf("DEBUG: requesting piece...%d\n", piece);
         if ((rpeer = choose_a_peer_to_request_from()) == -1)
             break;
-        printf("DEBUG: from peer=%d\n", rpeer);
         send_request_message(rpeer, piece);
-
     }
 }
