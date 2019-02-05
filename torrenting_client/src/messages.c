@@ -6,6 +6,7 @@
 #include <string.h>
 #include <sys/stat.h>
 
+#include "logging_utils.h"
 #include "filestring.h"
 #include "messages.h"
 #include "socket_helpers.h"
@@ -59,13 +60,6 @@ int send_peer_message(int sockfd, msg_t *msg){
     return nbytes;
 }
 
-int receive_peer_message(int sockfd, char *buf, int length){
-    int nbytes;
-
-    nbytes = receive_on_socket(sockfd, buf, length);
-
-    return nbytes;
-}
 
 int how_many_shift_bits_in_my_bitfield(){
     return 8 - (localstate.n_pieces % 8);
@@ -114,8 +108,54 @@ int send_bitfield_message(int sockfd){
     return send_peer_message(sockfd, &msg);
 }
 
+void print_peer_bitfields(){
+    int i;
+    peer_t *p;
+    char *headers[] = {"Sockfd", "Status", "Bitfield", "Down/s", "Up/s"};
+    int n_headers = 5;
 
-int receive_bitfield_message(int sockfd){
+    printf("Peer bitfields:\n");
+
+    printf("\t");
+    for (i = 0; i < n_headers; i++){
+        print_str_cell(headers[i]);
+    }
+    printf("\n");
+
+    print_horizontal_line(n_headers * (3 +COLUMN_WIDTH));
+
+    printf("\t");
+    for (i = 0; i<MAX_SOCKFD; i++){
+        if ((p = localstate.peers[i]) == NULL)
+            continue;
+
+        print_int_cell(i);
+        print_str_cell("0101");
+        print_bitfield_cell(p->bitfield >> how_many_shift_bits_in_my_bitfield());
+        print_int_cell(0);
+        print_int_cell(0);
+    }
+    printf("\n");
+
+    print_horizontal_line(n_headers * (3 +COLUMN_WIDTH));
+}
+
+void add_peer(int sockfd, int bitfield){
+    peer_t *p;
+    
+    p = malloc(sizeof(p));
+    p->bitfield = bitfield;
+    p->requested_piece = -1;
+    p->last_contact = -1;
+
+    localstate.peers[sockfd] = p;
+
+    printf("Added a new peer.\n");
+    print_peer_bitfields();
+};
+
+int handle_bitfield_message(int sockfd, msg_t *msg){
+    // If bitfield message validates, then it will set the bitfield field on the peer struct at the sockfd.
     int i;
 
     // For receiving messsage
@@ -131,40 +171,26 @@ int receive_bitfield_message(int sockfd){
     char length_buf[5];
     char bf_buf[n_bitfield_bytes+1];
 
-    if ((nbytes = receive_peer_message(sockfd, buf, expected_msg_length + 1)) <= 0)
-        return -1;
-
-    // For debugging
-    /* printf("received bitfield message from peer length=(%d)\n", nbytes); */
-    /* for (i = 0; i < nbytes; i++) */
-    /*     printf("%02x", (unsigned char) buf[i]); */
-    /* printf("\n"); */
-
-    for (i = 0; i < LENGTH_PREFIX_BITS; i++)
-        length_buf[i] = buf[i];
-
-    msg_type = buf[LENGTH_PREFIX_BITS];
-
-    for (i = 0; i < n_bitfield_bytes; i++)
-        bf_buf[i] = buf[i + LENGTH_PREFIX_BITS + 1];
-
-    length = decode_int_from_char(length_buf, LENGTH_PREFIX_BITS);
-    if (length != n_bitfield_bytes + 1){
+    if (msg->length != n_bitfield_bytes + 1){
         fprintf(stderr, "Expected length prefix %d.  Instead got %d\n", n_bitfield_bytes + 1, length);
         return -1;
     }
 
-    if (msg_type != BITFIELD){
+    if (msg->type != BITFIELD){
         fprintf(stderr, "expected message type of BITFIELD=5 from peer. Instead got %d\n", msg_type);
         return -1;
     }
 
-    bitfield = decode_int_from_char(bf_buf, n_bitfield_bytes);
+    bitfield = decode_int_from_char(msg->payload, n_bitfield_bytes);
 
-    if ((bitfield & ((int) pow((double) 2, n_shift_bits) - 1)) > 0)
+    if ((bitfield & ((int) pow((double) 2, n_shift_bits) - 1)) > 0){
         fprintf(stderr, "trailing zeros were set in peers bitfield\n");
+        return -1;
+    }
 
-    return bitfield;
+    add_peer(sockfd, bitfield);
+
+    return 0;
 }
 
 int send_request_message(int sockfd, int piece){
@@ -225,4 +251,64 @@ void send_piece_requests(){
             break;
         send_request_message(rpeer, piece);
     }
+}
+
+int receive_peer_message(int sockfd){
+    msg_t msg;
+    int nbytes, msg_type, i;
+    char length_buffer[LENGTH_PREFIX_BITS];
+
+    int longest_possible_length = 4 + 1 + 4 + 4 + localstate.piece_length; 
+    char receive_buffer[longest_possible_length + 1];
+
+    if ((nbytes = receive_on_socket(sockfd, receive_buffer, longest_possible_length)) <= 0)
+        return -1;
+
+    // DEBUGGING
+    /* printf("These are the first 15 bytes of the message received:\n"); */
+    /* for (i = 0; i < 15; i++) */
+    /*     printf("%02x", receive_buffer[i]); */
+    /* printf("\n"); */
+    /////////////
+
+    for (i = 0; i < LENGTH_PREFIX_BITS; i++)
+        length_buffer[i] = receive_buffer[i];
+    msg.length = decode_int_from_char(length_buffer, LENGTH_PREFIX_BITS);
+
+    msg_type = receive_buffer[LENGTH_PREFIX_BITS];
+    msg.type = msg_type;
+
+    printf("DEBUG: msg.type: %d\n", msg.type);
+
+    if (msg.type != BITFIELD && localstate.peers[sockfd] == NULL)
+        return -1;
+
+    msg.payload = receive_buffer + LENGTH_PREFIX_BITS + 1;
+
+    switch(msg.type){
+        case (CHOKE):
+            break;
+        case (UNCHOKE):
+            break;
+        case (INTERESTED):
+            break;
+        case (NOT_INTERESTED):
+            break;
+        case (HAVE):
+            break;
+        case (BITFIELD):
+            if (handle_bitfield_message(sockfd, &msg) == -1)
+                return -1;
+        case (REQUEST):
+            break;
+        case (PIECE):
+            break;
+        case (CANCEL):
+            break;
+        default:
+            fprintf(stderr, "Unknown message type: %d\n", msg.type);
+            return -1;
+    }
+
+    return nbytes;
 }

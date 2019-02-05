@@ -2,6 +2,7 @@
 #include <string.h>
 
 #include "logging_utils.h"
+#include "state.h"
 
 void print_str_cell(char *value){
     int indent;
@@ -25,4 +26,19 @@ void print_horizontal_line(int width){
         printf("%s", "-");
     printf("\n");
 }
+
+void print_bitfield_cell(int bitfield){
+    int i, left, cur, n_pieces;
+
+    left = COLUMN_WIDTH;
+    n_pieces = localstate.n_pieces;
+
+    for (i = 0; i < n_pieces; i++){
+        cur = bitfield >> (n_pieces - 1 - i) & 1;
+        printf("%d", cur);
+    }
+    printf("%*s | ", COLUMN_WIDTH - n_pieces, "");
+
+}
+
 
