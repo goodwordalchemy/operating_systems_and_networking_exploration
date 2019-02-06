@@ -234,8 +234,6 @@ int setup_peer_connections(){
     select_timeout.tv_usec = 0;
 
     for (;;){
-        send_request_messages();
-
         // handle incoming messagesz
         read_fds = master;
 
@@ -261,6 +259,9 @@ int setup_peer_connections(){
                 }
             }
         }
+
+        send_request_messages();
+
     }
 
     return 0;

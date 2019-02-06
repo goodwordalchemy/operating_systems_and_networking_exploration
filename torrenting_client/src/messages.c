@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 #include "logging_utils.h"
 #include "filestring.h"
@@ -20,37 +21,41 @@ void print_my_status(){
     char *headers[] = {"Bitfield", "Downloaded", "Uploaded", "Left"};
     int n_headers = 4;
     
-    printf("My status:\n");
-    printf("\t");
-    for (i = 0; i < n_headers; i++){
-        print_str_cell(headers[i]);
+    if (fork() == 0){
+        printf("My status:\n");
+        printf("\t");
+        for (i = 0; i < n_headers; i++){
+            print_str_cell(headers[i]);
+        }
+        printf("\n");
+
+        print_horizontal_line(n_headers * (3 +COLUMN_WIDTH));
+
+        n_pieces = localstate.n_pieces;
+        bitfield = what_is_my_bitfield() >> how_many_shift_bits_in_my_bitfield();
+
+        printf("\t");
+        downloaded = 0;
+        for (i = 0; i < n_pieces; i++){
+            cur = bitfield >> (n_pieces - 1 - i) & 1;
+            printf("%d", cur);
+            if (cur)
+                downloaded++;
+        }
+        printf("%*s | ", COLUMN_WIDTH - n_pieces, "");
+
+        uploaded = 0; // Nobody has uploaded anything to anyone yet!
+        left = n_pieces - downloaded;
+
+        print_int_cell(downloaded);
+        print_int_cell(uploaded); 
+        print_int_cell(left);
+        printf("\n");
+        
+        print_horizontal_line(n_headers * (3 +COLUMN_WIDTH));
+
+        exit(0);
     }
-    printf("\n");
-
-    print_horizontal_line(n_headers * (3 +COLUMN_WIDTH));
-
-    n_pieces = localstate.n_pieces;
-    bitfield = what_is_my_bitfield() >> how_many_shift_bits_in_my_bitfield();
-
-    printf("\t");
-    downloaded = 0;
-    for (i = 0; i < n_pieces; i++){
-        cur = bitfield >> (n_pieces - 1 - i) & 1;
-        printf("%d", cur);
-        if (cur)
-            downloaded++;
-    }
-    printf("%*s | ", COLUMN_WIDTH - n_pieces, "");
-
-    uploaded = 0; // Nobody has uploaded anything to anyone yet!
-    left = n_pieces - downloaded;
-
-    print_int_cell(downloaded);
-    print_int_cell(uploaded); 
-    print_int_cell(left);
-    printf("\n");
-    
-    print_horizontal_line(n_headers * (3 +COLUMN_WIDTH));
 }
 
 unsigned long get_timestamp(){
@@ -89,6 +94,8 @@ int send_peer_message(int sockfd, msg_t *msg){
     buf[N_INTEGER_BYTES] = msg->type;
 
     memcpy(buf + N_INTEGER_BYTES + 1, msg->payload, msg->length - 1);
+
+    printf("DEBUG: sending message of type %d\n", msg->type);
 
     nbytes = send_on_socket(sockfd, buf, full_length);
     
@@ -151,30 +158,35 @@ void print_peer_bitfields(){
     char *headers[] = {"Sockfd", "Status", "Bitfield", "Down/s", "Up/s"};
     int n_headers = 5;
 
-    printf("Peer bitfields:\n");
+    if (fork() == 0){
+        printf("Peer bitfields:\n");
 
-    printf("\t");
-    for (i = 0; i < n_headers; i++){
-        print_str_cell(headers[i]);
+        printf("\t");
+        for (i = 0; i < n_headers; i++){
+            print_str_cell(headers[i]);
+        }
+        printf("\n");
+
+        print_horizontal_line(n_headers * (3 +COLUMN_WIDTH));
+
+        printf("\t");
+        for (i = 0; i<MAX_SOCKFD; i++){
+            if ((p = localstate.peers[i]) == NULL)
+                continue;
+
+            print_int_cell(i);
+            print_str_cell("0101");
+            print_bitfield_cell(p->bitfield >> how_many_shift_bits_in_my_bitfield());
+            print_int_cell(0);
+            print_int_cell(0);
+        }
+        printf("\n");
+
+        print_horizontal_line(n_headers * (3 +COLUMN_WIDTH));
+
+        exit(0);
     }
-    printf("\n");
 
-    print_horizontal_line(n_headers * (3 +COLUMN_WIDTH));
-
-    printf("\t");
-    for (i = 0; i<MAX_SOCKFD; i++){
-        if ((p = localstate.peers[i]) == NULL)
-            continue;
-
-        print_int_cell(i);
-        print_str_cell("0101");
-        print_bitfield_cell(p->bitfield >> how_many_shift_bits_in_my_bitfield());
-        print_int_cell(0);
-        print_int_cell(0);
-    }
-    printf("\n");
-
-    print_horizontal_line(n_headers * (3 +COLUMN_WIDTH));
 }
 
 void add_peer(int sockfd, int bitfield){
@@ -369,10 +381,10 @@ void send_have_messages(int index){
     int i;
     char payload[4];
 
+    encode_int_as_char(index, payload, N_INTEGER_BYTES);
+
     msg.length = 5;
     msg.type = HAVE;
-
-    encode_int_as_char(index, payload, N_INTEGER_BYTES);
     msg.payload = payload;
 
     for (i = 0; i < localstate.max_sockfd; i++){
@@ -442,6 +454,7 @@ int handle_piece_message(int sockfd, msg_t *msg){
     localstate.peers[sockfd]->requested_piece = -1;
     fclose(f);
     send_have_messages(index);
+    print_my_status();
 
     return 0;
 }
@@ -449,15 +462,15 @@ int handle_piece_message(int sockfd, msg_t *msg){
 int handle_have_message(int sockfd, msg_t *msg){
     int index;
 
-    if (msg->length != 5)
+    printf("received HAVE message on sockfd: %d\n", sockfd);
+    if (msg->length != 5){
         fprintf(stderr, "Have message was not correct length.\n");
+        return -1;
+    }
 
     index = decode_int_from_char(msg->payload, N_INTEGER_BYTES);
 
     localstate.peers[sockfd]->bitfield |= (int)pow((double) 2, localstate.n_pieces - 1 - index) << how_many_shift_bits_in_my_bitfield();
-
-    printf("received HAVE message on sockfd: %d\n", sockfd);
-    print_peer_bitfields();
 
     return 0;
 }
