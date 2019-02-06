@@ -47,6 +47,7 @@ int send_peer_message(int sockfd, msg_t *msg){
     buf = malloc(sizeof(char) * (full_length + 1));
 
     encode_int_as_char(msg->length, buf, N_INTEGER_BYTES);
+    printf("DEBUG: in send peer message, length converted back: %d\n", decode_int_from_char(buf, N_INTEGER_BYTES));
 
     buf[N_INTEGER_BYTES] = msg->type;
 
@@ -260,7 +261,7 @@ int send_piece_message(int sockfd, int piece_idx){
     int begin, piece_length, nbytes;
     char *piece_hash_digest, *payload_buf;
     
-    printf("DEBUG: sending a piece message: %d\n", piece_idx);
+    printf("\nDEBUG: sending a piece message: %d\n", piece_idx);
 
     msg.type = PIECE;
 
@@ -292,7 +293,15 @@ int send_piece_message(int sockfd, int piece_idx){
 
     msg.payload = payload_buf;
 
+    printf("DEBUG: for sure, index: %d, begin %d, length: %d\n", 
+            decode_int_from_char(msg.payload, 4),
+            decode_int_from_char(msg.payload + 4, 4),
+            msg.length);
+
     nbytes = send_peer_message(sockfd, &msg);
+
+    printf("DEBUG: number of bytes sent: %d\n", nbytes);
+    printf("DEBUG: localstate.piece size: %d, my piece size: %d\n", localstate.piece_length, piece_length);
 
     free(payload_buf);
 
@@ -339,14 +348,19 @@ int handle_piece_message(int sockfd, msg_t *msg){
     int index, begin, expected_length, piece_length;
     char *piece_contents, *cur_hash_digest;
 
-    printf("DEBUG: got a piece message!\n");
+    printf("DEBUG: got a piece message! ");
+    printf("index: %d, begin %d, length: %d\n", 
+            decode_int_from_char(msg->payload, 4),
+            decode_int_from_char(msg->payload + 4, 4),
+            msg->length);
 
     index = decode_int_from_char(msg->payload, 4);
     begin = decode_int_from_char(msg->payload + 4, 4);
     piece_length = decode_int_from_char(msg->payload + 8, 4);
 
     if (index != localstate.peers[sockfd]->requested_piece){
-        fprintf(stderr, "Index of piece sent by peer is not the index of the piece we requested\n");
+        fprintf(stderr, "Index of send piece wrong.  Requested %d.  Got %d\n",
+                localstate.peers[sockfd]->requested_piece, index);
         return -1;
     }
     
@@ -398,11 +412,15 @@ int receive_peer_message(int sockfd){
     int nbytes, msg_type, i;
     char length_buffer[N_INTEGER_BYTES];
 
-    int longest_possible_length = 4 + 1 + 4 + 4 + localstate.piece_length; 
-    char receive_buffer[longest_possible_length + 1];
+    // longest possible length is in a piece message.  (length prefix) (msg type) (index) (begin) (piece length) + null-termination?
+    int longest_possible_length = 4 + 1 + 4 + 4 + localstate.piece_length + 2; 
+    char receive_buffer[longest_possible_length];
 
     if ((nbytes = receive_on_socket(sockfd, receive_buffer, longest_possible_length)) <= 0)
         return -1;
+
+    printf("DEBUG: longest possible length: %d\n", longest_possible_length);
+    printf("DEBUG: receiving peer message.  nbytes=%d\n", nbytes);
 
     // DEBUGGING
     /* printf("These are the first 15 bytes of the message received:\n"); */
