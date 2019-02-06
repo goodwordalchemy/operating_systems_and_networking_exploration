@@ -221,6 +221,8 @@ int choose_a_peer_to_request_from(){
 int send_request_message(int sockfd, int piece){
     msg_t msg;
     char data[12];
+
+    printf("DEBUG: sending request ofr %d\n", piece);
     
     encode_int_as_char(piece, data, 4);
     encode_int_as_char(0, data + 4, 4);
@@ -257,6 +259,8 @@ int send_piece_message(int sockfd, int piece_idx){
     FILE *f;
     int begin, piece_length, nbytes;
     char *piece_hash_digest, *payload_buf;
+    
+    printf("DEBUG: sending a piece message: %d\n", piece_idx);
 
     msg.type = PIECE;
 
@@ -327,7 +331,7 @@ int handle_request_message(int sockfd, msg_t *msg){
     return 0;
 }
 void send_have_messages(int index){
-    printf("DEBUG: if I'd implemented it, I'd be sending have messages here");
+    printf("DEBUG: if I'd implemented it, I'd be sending have messages here\n");
 }
 
 int handle_piece_message(int sockfd, msg_t *msg){
@@ -335,7 +339,7 @@ int handle_piece_message(int sockfd, msg_t *msg){
     int index, begin, expected_length, piece_length;
     char *piece_contents, *cur_hash_digest;
 
-    printf("DEBUG: got a piece message!");
+    printf("DEBUG: got a piece message!\n");
 
     index = decode_int_from_char(msg->payload, 4);
     begin = decode_int_from_char(msg->payload + 4, 4);
@@ -352,16 +356,12 @@ int handle_piece_message(int sockfd, msg_t *msg){
     }
 
     if (index == localstate.n_pieces-1)
-        expected_length = localstate.last_piece_size;
+        piece_length = localstate.last_piece_size;
     else 
-        expected_length = localstate.piece_length;
+        piece_length = localstate.piece_length;
 
-    if (expected_length != piece_length){
-        fprintf(stderr, "piece length was not as expected\n");
-        return -1;
-    }
 
-    expected_length += 9;
+    expected_length = piece_length + 9;
     if (msg->length != expected_length){
         fprintf(stderr, "Piece message was not the correct length.  Should be %d, was %d", expected_length, msg->length);
         return -1;
@@ -387,9 +387,8 @@ int handle_piece_message(int sockfd, msg_t *msg){
 
     // Note, bitfield is automatically updated, because piece hash file exists.
     localstate.peers[sockfd]->requested_piece = -1;
-    send_have_messages(index);
-
     fclose(f);
+    send_have_messages(index);
 
     return 0;
 }
