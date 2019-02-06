@@ -207,18 +207,13 @@ int choose_a_piece_to_request(){
 int choose_a_peer_to_request_from(){
     int i;
     peer_t *p;
-    printf("\nDEBUG: choosing a peer to request from.\n");
     for (i = 0; i < localstate.max_sockfd; i++){
-        printf("DEBUG: checking peer=%d...", i);
         if ((p = localstate.peers[i]) == NULL){
-            printf("null.\n");
             continue;
         }
         if (p->last_contact == 0 || p->requested_piece == -1){
-            printf("found.\n");
             return i;
         }
-        printf("already requested piece. last contact=%lu, requested piece=%d\n", p->last_contact, p->requested_piece);
     }
     return -1;
 }
@@ -276,7 +271,7 @@ int send_piece_message(int sockfd, int piece_idx){
 
     msg.length = 1 + 4 + 4 + piece_length; // msg_id + index + begin + block
 
-    if ((payload_buf = malloc((msg.length - 1 + 1) * sizeof(char))) == NULL){
+    if ((payload_buf = malloc((msg.length) * sizeof(char))) == NULL){
         perror("malloc");
         return -1;
     }
@@ -290,6 +285,8 @@ int send_piece_message(int sockfd, int piece_idx){
         perror("malloc");
         return -1;
     }
+
+    msg.payload = payload_buf;
 
     nbytes = send_peer_message(sockfd, &msg);
 
@@ -329,11 +326,16 @@ int handle_request_message(int sockfd, msg_t *msg){
 
     return 0;
 }
+void send_have_messages(int index){
+    printf("DEBUG: if I'd implemented it, I'd be sending have messages here");
+}
 
 int handle_piece_message(int sockfd, msg_t *msg){
     FILE *f;
-    int index, begin, msg_length, expected_length, piece_length;
+    int index, begin, expected_length, piece_length;
     char *piece_contents, *cur_hash_digest;
+
+    printf("DEBUG: got a piece message!");
 
     index = decode_int_from_char(msg->payload, 4);
     begin = decode_int_from_char(msg->payload + 4, 4);
@@ -383,8 +385,8 @@ int handle_piece_message(int sockfd, msg_t *msg){
         return -1;
     }
 
+    // Note, bitfield is automatically updated, because piece hash file exists.
     localstate.peers[sockfd]->requested_piece = -1;
-    // update bitfield
     send_have_messages(index);
 
     fclose(f);
@@ -444,6 +446,8 @@ int receive_peer_message(int sockfd){
                 return -1;
             break;
         case (PIECE):
+            if (handle_piece_message(sockfd, &msg) == -1)
+                return -1;
             break;
         case (CANCEL):
             break;
