@@ -5,7 +5,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include "announce.h"
+#include "tracker.h"
 #include "metainfo.h"
 #include "handshake.h"
 #include "pieces.h"

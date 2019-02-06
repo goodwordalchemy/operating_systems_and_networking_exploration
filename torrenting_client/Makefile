@@ -10,11 +10,11 @@ CFLAGS=-Wall -g
 LDFLAGS=-L/usr/local/Cellar//openssl@1.1/1.1.0g/lib/\
 		-I/usr/local/Cellar//openssl@1.1/1.1.0g/
 
-_DEPS=announce.h\
+_DEPS=tracker.h\
 	 bencode/bencode.h\
 	 be_node_utils.h\
-	 filestring.h\
-	 handshake.h\
+	 file_utils.h\
+	 piece_trading.h\
 	 hash_utils.h\
 	 ip_address.h\
 	 logging_utils.h\
@@ -25,11 +25,11 @@ _DEPS=announce.h\
 	 state.h
 DEPS=$(patsubst %, $(SRCDIR)/%, $(_DEPS))
 
-_OBJS=announce.o\
+_OBJS=tracker.o\
 	 bencode.o\
 	 be_node_utils.o\
-	 filestring.o\
-	 handshake.o\
+	 file_utils.o\
+	 piece_trading.o\
 	 hash_utils.o\
 	 logging_utils.o\
 	 ip_address.o\

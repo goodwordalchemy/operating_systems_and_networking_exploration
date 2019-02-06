@@ -3,7 +3,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "filestring.h"
+#include "file_utils.h"
 #include "hash_utils.h"
 #include "state.h"
 

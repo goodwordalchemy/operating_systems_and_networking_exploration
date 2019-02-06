@@ -1,3 +1,5 @@
+// Creates global trackerinfo object after interacting with tracker.
+// All interfacing with tracker or updating of the trackerinfo object goes here.
 #include <ctype.h>
 #include <netdb.h>
 #include <stdio.h>
