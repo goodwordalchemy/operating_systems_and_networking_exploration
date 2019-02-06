@@ -446,11 +446,10 @@ int handle_piece_message(int sockfd, msg_t *msg){
 
     // Note, bitfield is automatically updated, because piece hash file exists.
     
-    next_piece = choose_a_piece_to_request();
-    if (next_piece != -1)
-        send_request_message(sockfd, next_piece);
-    else
-        localstate.peers[sockfd]->requested_piece = next_piece;
+    // flush request messages before broadcasting have in order to prevent request message getting lost in rapid succession of
+    // have / request message on same buffer.
+    localstate.peers[sockfd]->requested_piece = -1;
+    send_request_messages();
 
     print_my_status();
 
