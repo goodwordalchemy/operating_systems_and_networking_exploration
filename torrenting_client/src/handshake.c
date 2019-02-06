@@ -272,7 +272,7 @@ int setup_peer_connections(){
     select_timeout.tv_usec = 0;
 
     for (;;){
-        send_piece_requests();
+        send_request_messages();
 
         // handle incoming messagesz
         read_fds = master;

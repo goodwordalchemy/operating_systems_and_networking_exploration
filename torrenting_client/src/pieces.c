@@ -9,17 +9,14 @@
 
 #define HEX_DIGEST_BUFLEN ((SHA_DIGEST_LENGTH * 2) + 1)
 
-int validate_piece(char *piece_digest){
+int validate_piece(char *piece_digest, char *data, int length){
     int i;
-    filestring_t *fs;
     unsigned char hash_buf[SHA_DIGEST_LENGTH+1];
     char digest_buf[HEX_DIGEST_BUFLEN];
 
-    fs = read_file_to_string(piece_digest);
 
-    SHA1((unsigned char *)fs->data, fs->length, hash_buf); 
+    SHA1((unsigned char *)data, length, hash_buf); 
 
-    free(fs);
 
     hex_digest(hash_buf, digest_buf);
 
@@ -29,6 +26,19 @@ int validate_piece(char *piece_digest){
     }
 
     return 1;
+}
+
+int validate_saved_piece(char *piece_digest){
+    int result;
+    filestring_t *fs;
+
+    fs = read_file_to_string(piece_digest);
+
+    result = validate_piece(piece_digest, fs->data, fs->length);
+
+    free(fs);
+
+    return result;
 }
 
 int create_pieces(){
@@ -71,7 +81,7 @@ int create_pieces(){
             return -1;
         }
 
-        if (!validate_piece(cur_piece_digest)){
+        if (!validate_saved_piece(cur_piece_digest)){
             fprintf(stderr, "Could not validate piece.\n");
             return -1;
         }

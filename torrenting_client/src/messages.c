@@ -9,6 +9,7 @@
 #include "logging_utils.h"
 #include "filestring.h"
 #include "messages.h"
+#include "pieces.h"
 #include "socket_helpers.h"
 #include "state.h"
 
@@ -206,11 +207,18 @@ int choose_a_piece_to_request(){
 int choose_a_peer_to_request_from(){
     int i;
     peer_t *p;
+    printf("\nDEBUG: choosing a peer to request from.\n");
     for (i = 0; i < localstate.max_sockfd; i++){
-        if ((p = localstate.peers[i]) == NULL)
+        printf("DEBUG: checking peer=%d...", i);
+        if ((p = localstate.peers[i]) == NULL){
+            printf("null.\n");
             continue;
-        if (p->requested_piece == -1)
+        }
+        if (p->last_contact == 0 || p->requested_piece == -1){
+            printf("found.\n");
             return i;
+        }
+        printf("already requested piece. last contact=%lu, requested piece=%d\n", p->last_contact, p->requested_piece);
     }
     return -1;
 }
@@ -239,7 +247,7 @@ int send_request_message(int sockfd, int piece){
 }
 
 
-void send_piece_requests(){
+void send_request_messages(){
     int rpeer, piece;
 
     while ((piece = choose_a_piece_to_request()) != -1){
@@ -249,7 +257,7 @@ void send_piece_requests(){
     }
 }
 
-int send_piece(int sockfd, int piece_idx){
+int send_piece_message(int sockfd, int piece_idx){
     msg_t msg;
     FILE *f;
     int begin, piece_length, nbytes;
@@ -290,7 +298,7 @@ int send_piece(int sockfd, int piece_idx){
     return nbytes;
 }
 
-int handle_piece_request(int sockfd, msg_t *msg){
+int handle_request_message(int sockfd, msg_t *msg){
     int index, begin, length;
 
     if (msg->length != 13){
@@ -314,12 +322,72 @@ int handle_piece_request(int sockfd, msg_t *msg){
         return -1;
     }
 
-    printf("Received request for piece at index %d.  Need to fulfill it\n", index);
-
-    if (send_piece(sockfd, index) <= 0){
+    if (send_piece_message(sockfd, index) <= 0){
         fprintf(stderr, "There was an error fulfilling a piece request\n");
         return -1;
     }
+
+    return 0;
+}
+
+int handle_piece_message(int sockfd, msg_t *msg){
+    FILE *f;
+    int index, begin, msg_length, expected_length, piece_length;
+    char *piece_contents, *cur_hash_digest;
+
+    index = decode_int_from_char(msg->payload, 4);
+    begin = decode_int_from_char(msg->payload + 4, 4);
+    piece_length = decode_int_from_char(msg->payload + 8, 4);
+
+    if (index != localstate.peers[sockfd]->requested_piece){
+        fprintf(stderr, "Index of piece sent by peer is not the index of the piece we requested\n");
+        return -1;
+    }
+    
+    if (begin != 0){
+        fprintf(stderr, "Have not implemented sending blocks that aren't the first in their piece\n");
+        return -1;
+    }
+
+    if (index == localstate.n_pieces-1)
+        expected_length = localstate.last_piece_size;
+    else 
+        expected_length = localstate.piece_length;
+
+    if (expected_length != piece_length){
+        fprintf(stderr, "piece length was not as expected\n");
+        return -1;
+    }
+
+    expected_length += 9;
+    if (msg->length != expected_length){
+        fprintf(stderr, "Piece message was not the correct length.  Should be %d, was %d", expected_length, msg->length);
+        return -1;
+    }
+
+    cur_hash_digest = localstate.piece_hash_digests[index];
+    piece_contents = msg->payload + 8;
+
+    if (validate_piece(cur_hash_digest, piece_contents, piece_length) == -1){
+        fprintf(stderr, "Piece received did not validate against it's hash.\n");
+        return -1;
+    }
+
+    if ((f = fopen(cur_hash_digest, "w")) == NULL){
+        perror("fopen");
+        return -1;
+    }
+
+    if (fwrite(piece_contents, 1, piece_length, f) <= 0){
+        perror("fwrite");
+        return -1;
+    }
+
+    localstate.peers[sockfd]->requested_piece = -1;
+    // update bitfield
+    send_have_messages(index);
+
+    fclose(f);
 
     return 0;
 }
@@ -372,7 +440,7 @@ int receive_peer_message(int sockfd){
                 return -1;
             break;
         case (REQUEST):
-            if (handle_piece_request(sockfd, &msg) == -1)
+            if (handle_request_message(sockfd, &msg) == -1)
                 return -1;
             break;
         case (PIECE):
