@@ -1,10 +1,11 @@
 #include <ctype.h>
 #include <netdb.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <regex.h>
 
 #include "be_node_utils.h"
-#include "http_response_parse.h"
 #include "logging_utils.h"
 #include "state.h"
 #include "socket_helpers.h"
@@ -15,6 +16,15 @@
 #define EVENT_BUFLEN 10
 #define REQUEST_BUFLEN 255
 #define RESPONSE_BUFLEN 8192
+
+#define HTTP_RESPONSE_REGEX "(HTTP/1.1 [0-9][0-9][0-9] OK)(\r\n.*)*Content-Length: ([0-9]+)\r\n\r\n(.*)"
+
+typedef struct __http_response_t {
+    char *status_line;
+    int status_code;
+    char *content;
+    int content_length;
+} http_response_t;
 
 
 char *announce_keys[] = {"complete", "incomplete", "interval", "min interval"};
@@ -87,6 +97,52 @@ void _get_response_from_tracker(const char *request, char *response_buf){
         fprintf(stderr, "Error: Did not receive a announce response from tracker.\n");
 }
 
+
+void free_http_response(http_response_t *resp){
+    free(resp->status_line);
+    free(resp->content);
+    free(resp);
+}
+
+http_response_t *extract_response_content(char *response){
+    http_response_t *r;
+    int rc;
+    char cl_buf[6], err_buf[100];
+    regex_t regex;
+    regmatch_t rm[5];
+
+    if ((r = malloc(sizeof(http_response_t))) == NULL)
+        perror("http_response malloc");
+
+    if ((rc = regcomp(&regex, HTTP_RESPONSE_REGEX, REG_EXTENDED)) != 0){
+        regerror(rc, &regex, err_buf, 100);
+        fprintf(stderr, "regcomp() failed with '%s'\n", err_buf);
+    }
+
+    if (regexec(&regex, response, 5, rm, 0)){
+        regerror(rc, &regex, err_buf, 100);
+        fprintf(stderr, "regexec() failed with '%s'\n", err_buf);
+    }
+
+
+    if ((r->status_line = malloc(sizeof(char) * ((rm[1].rm_eo - rm[1].rm_so) + 1))) == NULL)
+        perror("status line malloc");
+
+	sprintf(r->status_line, "%.*s", (int)(rm[1].rm_eo - rm[1].rm_so), response + rm[1].rm_so);
+    sscanf(r->status_line, "HTTP/1.1 %3d%*s", &r->status_code);
+
+	sprintf(cl_buf, "%.*s", (int)(rm[3].rm_eo - rm[3].rm_so), response + rm[3].rm_so);
+    r->content_length = atoi(cl_buf);
+
+    if ((r->content = malloc(sizeof(char) * (r->content_length + 1))) == NULL)
+        perror("content malloc");
+
+	sprintf(r->content, "%.*s", (int)(rm[4].rm_eo - rm[4].rm_so), response + rm[4].rm_so);
+
+    regfree(&regex);
+
+    return r;
+}
 
 /*
 This function does a lot of things worth noting:
