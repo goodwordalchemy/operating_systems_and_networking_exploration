@@ -44,16 +44,14 @@ int send_peer_message(int sockfd, msg_t *msg){
 
     full_length = msg->length + N_INTEGER_BYTES + 1;
 
-    buf = malloc(sizeof(char) * (full_length + 1));
+    buf = malloc(sizeof(char) * full_length);
 
     encode_int_as_char(msg->length, buf, N_INTEGER_BYTES);
     printf("DEBUG: in send peer message, length converted back: %d\n", decode_int_from_char(buf, N_INTEGER_BYTES));
 
     buf[N_INTEGER_BYTES] = msg->type;
 
-    memcpy(buf + N_INTEGER_BYTES + 1, msg->payload, msg->length);
-
-    buf[full_length+1] = 0;
+    memcpy(buf + N_INTEGER_BYTES + 1, msg->payload, msg->length - 1);
 
     nbytes = send_on_socket(sockfd, buf, full_length);
     
@@ -412,7 +410,7 @@ int receive_peer_message(int sockfd){
     int nbytes, msg_type, i;
     char length_buffer[N_INTEGER_BYTES];
 
-    // longest possible length is in a piece message.  (length prefix) (msg type) (index) (begin) (piece length) + null-termination?
+    // longest possible length is in a piece message.  (length prefix) (msg type) (index) (begin) (piece length) + null-termination
     int longest_possible_length = 4 + 1 + 4 + 4 + localstate.piece_length + 2; 
     char receive_buffer[longest_possible_length];
 
