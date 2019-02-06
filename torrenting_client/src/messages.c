@@ -195,7 +195,7 @@ int choose_a_piece_to_request(){
     bitfield = what_is_my_bitfield() >> how_many_shift_bits_in_my_bitfield();
 
     for (i = 0; i < localstate.n_pieces; i++){
-        power = (int)pow((double)2, i);
+        power = (int)pow((double)2, localstate.n_pieces - 1 - i);
         if (power & bitfield)
             continue;
         return i;
@@ -222,7 +222,7 @@ int send_request_message(int sockfd, int piece){
     msg_t msg;
     char data[12];
 
-    printf("DEBUG: sending request ofr %d\n", piece);
+    printf("DEBUG: sending request of %d\n", piece);
     
     encode_int_as_char(piece, data, 4);
     encode_int_as_char(0, data + 4, 4);
@@ -363,7 +363,7 @@ int handle_piece_message(int sockfd, msg_t *msg){
 
     expected_length = piece_length + 9;
     if (msg->length != expected_length){
-        fprintf(stderr, "Piece message was not the correct length.  Should be %d, was %d", expected_length, msg->length);
+        fprintf(stderr, "Piece message was not the correct length.  Should be %d, was %d\n", expected_length, msg->length);
         return -1;
     }
 
