@@ -12,7 +12,7 @@
 #include "socket_helpers.h"
 #include "state.h"
 
-#define LENGTH_PREFIX_BITS 4
+#define N_INTEGER_BYTES 4
 
 unsigned long get_timestamp(){
     return (unsigned long)time(NULL);
@@ -41,15 +41,15 @@ int send_peer_message(int sockfd, msg_t *msg){
     char *buf;
     int full_length, nbytes;
 
-    full_length = msg->length + LENGTH_PREFIX_BITS + 1;
+    full_length = msg->length + N_INTEGER_BYTES + 1;
 
     buf = malloc(sizeof(char) * (full_length + 1));
 
-    encode_int_as_char(msg->length, buf, LENGTH_PREFIX_BITS);
+    encode_int_as_char(msg->length, buf, N_INTEGER_BYTES);
 
-    buf[LENGTH_PREFIX_BITS] = msg->type;
+    buf[N_INTEGER_BYTES] = msg->type;
 
-    memcpy(buf + LENGTH_PREFIX_BITS + 1, msg->payload, msg->length);
+    memcpy(buf + N_INTEGER_BYTES + 1, msg->payload, msg->length);
 
     buf[full_length+1] = 0;
 
@@ -249,6 +249,47 @@ void send_piece_requests(){
     }
 }
 
+int send_piece(int sockfd, int piece_idx){
+    msg_t msg;
+    FILE *f;
+    int begin, piece_length, nbytes;
+    char *piece_hash_digest, *payload_buf;
+
+    msg.type = PIECE;
+
+    piece_hash_digest = localstate.piece_hash_digests[piece_idx];
+    if ((f = fopen(piece_hash_digest, "r")) == NULL)
+        return -1;
+
+    if (piece_idx == localstate.n_pieces-1)
+        piece_length = localstate.last_piece_size;
+    else
+        piece_length = localstate.piece_length;
+
+    msg.length = 1 + 4 + 4 + piece_length; // msg_id + index + begin + block
+
+    if ((payload_buf = malloc((msg.length - 1 + 1) * sizeof(char))) == NULL){
+        perror("malloc");
+        return -1;
+    }
+
+    encode_int_as_char(piece_idx, payload_buf, N_INTEGER_BYTES);
+
+    begin = 0; // Maybe later I'll implement block sizes other than piece size...
+    encode_int_as_char(begin, payload_buf + 4, N_INTEGER_BYTES);
+
+    if (fread(payload_buf+8, 1, piece_length, f) == 0){
+        perror("malloc");
+        return -1;
+    }
+
+    nbytes = send_peer_message(sockfd, &msg);
+
+    free(payload_buf);
+
+    return nbytes;
+}
+
 int handle_piece_request(int sockfd, msg_t *msg){
     int index, begin, length;
 
@@ -275,13 +316,18 @@ int handle_piece_request(int sockfd, msg_t *msg){
 
     printf("Received request for piece at index %d.  Need to fulfill it\n", index);
 
+    if (send_piece(sockfd, index) <= 0){
+        fprintf(stderr, "There was an error fulfilling a piece request\n");
+        return -1;
+    }
+
     return 0;
 }
 
 int receive_peer_message(int sockfd){
     msg_t msg;
     int nbytes, msg_type, i;
-    char length_buffer[LENGTH_PREFIX_BITS];
+    char length_buffer[N_INTEGER_BYTES];
 
     int longest_possible_length = 4 + 1 + 4 + 4 + localstate.piece_length; 
     char receive_buffer[longest_possible_length + 1];
@@ -296,11 +342,11 @@ int receive_peer_message(int sockfd){
     /* printf("\n"); */
     /////////////
 
-    for (i = 0; i < LENGTH_PREFIX_BITS; i++)
+    for (i = 0; i < N_INTEGER_BYTES; i++)
         length_buffer[i] = receive_buffer[i];
-    msg.length = decode_int_from_char(length_buffer, LENGTH_PREFIX_BITS);
+    msg.length = decode_int_from_char(length_buffer, N_INTEGER_BYTES);
 
-    msg_type = receive_buffer[LENGTH_PREFIX_BITS];
+    msg_type = receive_buffer[N_INTEGER_BYTES];
     msg.type = msg_type;
 
     printf("DEBUG: received msg.type: %d\n", msg.type);
@@ -308,7 +354,7 @@ int receive_peer_message(int sockfd){
     if (msg.type != BITFIELD && localstate.peers[sockfd] == NULL)
         return -1;
 
-    msg.payload = receive_buffer + LENGTH_PREFIX_BITS + 1;
+    msg.payload = receive_buffer + N_INTEGER_BYTES + 1;
 
     switch(msg.type){
         case (CHOKE):
