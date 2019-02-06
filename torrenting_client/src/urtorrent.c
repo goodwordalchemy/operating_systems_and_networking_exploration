@@ -24,8 +24,10 @@ void cleanup(int trash){
     clean_pieces();
     free_peers();
     free_localstate_metainfo();
+
     if (metainfo != NULL)
         be_free(metainfo);
+
     if (trackerinfo != NULL)
         be_free(trackerinfo);
     exit(0);

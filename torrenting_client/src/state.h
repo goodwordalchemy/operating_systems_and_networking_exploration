@@ -14,7 +14,7 @@ be_node *trackerinfo;
 typedef struct {
     unsigned int bitfield;
     unsigned long last_contact;
-    unsigned int requested_piece;
+    int requested_piece;
 } peer_t ;
 
 struct localstate_t {

@@ -143,10 +143,12 @@ void print_peer_bitfields(){
 void add_peer(int sockfd, int bitfield){
     peer_t *p;
     
-    p = malloc(sizeof(p));
+    if ((p = (peer_t *)malloc(sizeof(peer_t))) == NULL)
+        perror("malloc");
+
     p->bitfield = bitfield;
+    p->last_contact = 0;
     p->requested_piece = -1;
-    p->last_contact = -1;
 
     localstate.peers[sockfd] = p;
 
@@ -186,29 +188,6 @@ int handle_bitfield_message(int sockfd, msg_t *msg){
     return 0;
 }
 
-int send_request_message(int sockfd, int piece){
-    msg_t msg;
-    char data[12];
-    
-    encode_int_as_char(piece, data, 4);
-    encode_int_as_char(0, data + 4, 4);
-    encode_int_as_char(localstate.piece_length, data + 8, 4);
-
-    msg.length = 13;
-    msg.type = REQUEST;
-    msg.payload = data;
-
-    if (send_peer_message(sockfd, &msg) <= 0){
-        fprintf(stderr, "could not send piece request.");
-        return 0;
-    }
-
-    localstate.peers[sockfd]->last_contact = get_timestamp();
-    localstate.peers[sockfd]->requested_piece = piece;
-
-    return 1;
-}
-
 int choose_a_piece_to_request(){
     int bitfield, i, power;
 
@@ -236,6 +215,30 @@ int choose_a_peer_to_request_from(){
     return -1;
 }
 
+int send_request_message(int sockfd, int piece){
+    msg_t msg;
+    char data[12];
+    
+    encode_int_as_char(piece, data, 4);
+    encode_int_as_char(0, data + 4, 4);
+    encode_int_as_char(localstate.piece_length, data + 8, 4);
+
+    msg.length = 13;
+    msg.type = REQUEST;
+    msg.payload = data;
+
+    if (send_peer_message(sockfd, &msg) <= 0){
+        fprintf(stderr, "could not send piece request.");
+        return 0;
+    }
+
+    localstate.peers[sockfd]->last_contact = get_timestamp();
+    localstate.peers[sockfd]->requested_piece = piece;
+
+    return 1;
+}
+
+
 void send_piece_requests(){
     int rpeer, piece;
 
@@ -250,7 +253,7 @@ int handle_piece_request(int sockfd, msg_t *msg){
     int index, begin, length;
 
     if (msg->length != 13){
-        fprintf(stderr, "Request message did not specify correct length.\n");
+        fprintf(stderr, "Request message did not specify correct length. Should be 13, but it was %d.\n", msg->length);
         return -1;
     }
 
@@ -270,7 +273,7 @@ int handle_piece_request(int sockfd, msg_t *msg){
         return -1;
     }
 
-    printf("Received request for piece at index %d.  Need to fulfill it", index);
+    printf("Received request for piece at index %d.  Need to fulfill it\n", index);
 
     return 0;
 }
@@ -300,7 +303,7 @@ int receive_peer_message(int sockfd){
     msg_type = receive_buffer[LENGTH_PREFIX_BITS];
     msg.type = msg_type;
 
-    printf("DEBUG: msg.type: %d\n", msg.type);
+    printf("DEBUG: received msg.type: %d\n", msg.type);
 
     if (msg.type != BITFIELD && localstate.peers[sockfd] == NULL)
         return -1;
@@ -321,9 +324,11 @@ int receive_peer_message(int sockfd){
         case (BITFIELD):
             if (handle_bitfield_message(sockfd, &msg) == -1)
                 return -1;
+            break;
         case (REQUEST):
             if (handle_piece_request(sockfd, &msg) == -1)
                 return -1;
+            break;
         case (PIECE):
             break;
         case (CANCEL):
