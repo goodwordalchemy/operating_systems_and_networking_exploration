@@ -21,41 +21,38 @@ void print_my_status(){
     char *headers[] = {"Bitfield", "Downloaded", "Uploaded", "Left"};
     int n_headers = 4;
     
-    if (fork() == 0){
-        printf("My status:\n");
-        printf("\t");
-        for (i = 0; i < n_headers; i++){
-            print_str_cell(headers[i]);
-        }
-        printf("\n");
-
-        print_horizontal_line(n_headers * (3 +COLUMN_WIDTH));
-
-        n_pieces = localstate.n_pieces;
-        bitfield = what_is_my_bitfield() >> how_many_shift_bits_in_my_bitfield();
-
-        printf("\t");
-        downloaded = 0;
-        for (i = 0; i < n_pieces; i++){
-            cur = bitfield >> (n_pieces - 1 - i) & 1;
-            printf("%d", cur);
-            if (cur)
-                downloaded++;
-        }
-        printf("%*s | ", COLUMN_WIDTH - n_pieces, "");
-
-        uploaded = 0; // Nobody has uploaded anything to anyone yet!
-        left = n_pieces - downloaded;
-
-        print_int_cell(downloaded);
-        print_int_cell(uploaded); 
-        print_int_cell(left);
-        printf("\n");
-        
-        print_horizontal_line(n_headers * (3 +COLUMN_WIDTH));
-
-        exit(0);
+    printf("My status:\n");
+    printf("\t");
+    for (i = 0; i < n_headers; i++){
+        print_str_cell(headers[i]);
     }
+    printf("\n");
+
+    print_horizontal_line(n_headers * (3 +COLUMN_WIDTH));
+
+    n_pieces = localstate.n_pieces;
+    bitfield = what_is_my_bitfield() >> how_many_shift_bits_in_my_bitfield();
+
+    printf("\t");
+    downloaded = 0;
+    for (i = 0; i < n_pieces; i++){
+        cur = bitfield >> (n_pieces - 1 - i) & 1;
+        printf("%d", cur);
+        if (cur)
+            downloaded++;
+    }
+    printf("%*s | ", COLUMN_WIDTH - n_pieces, "");
+
+    uploaded = 0; // Nobody has uploaded anything to anyone yet!
+    left = n_pieces - downloaded;
+
+    print_int_cell(downloaded);
+    print_int_cell(uploaded); 
+    print_int_cell(left);
+    printf("\n");
+    
+    print_horizontal_line(n_headers * (3 +COLUMN_WIDTH));
+
 }
 
 unsigned long get_timestamp(){
@@ -158,35 +155,30 @@ void print_peer_bitfields(){
     char *headers[] = {"Sockfd", "Status", "Bitfield", "Down/s", "Up/s"};
     int n_headers = 5;
 
-    if (fork() == 0){
-        printf("Peer bitfields:\n");
+    printf("Peer bitfields:\n");
 
-        printf("\t");
-        for (i = 0; i < n_headers; i++){
-            print_str_cell(headers[i]);
-        }
-        printf("\n");
-
-        print_horizontal_line(n_headers * (3 +COLUMN_WIDTH));
-
-        printf("\t");
-        for (i = 0; i<MAX_SOCKFD; i++){
-            if ((p = localstate.peers[i]) == NULL)
-                continue;
-
-            print_int_cell(i);
-            print_str_cell("0101");
-            print_bitfield_cell(p->bitfield >> how_many_shift_bits_in_my_bitfield());
-            print_int_cell(0);
-            print_int_cell(0);
-        }
-        printf("\n");
-
-        print_horizontal_line(n_headers * (3 +COLUMN_WIDTH));
-
-        exit(0);
+    printf("\t");
+    for (i = 0; i < n_headers; i++){
+        print_str_cell(headers[i]);
     }
+    printf("\n");
 
+    print_horizontal_line(n_headers * (3 +COLUMN_WIDTH));
+
+    printf("\t");
+    for (i = 0; i<MAX_SOCKFD; i++){
+        if ((p = localstate.peers[i]) == NULL)
+            continue;
+
+        print_int_cell(i);
+        print_str_cell("0101");
+        print_bitfield_cell(p->bitfield >> how_many_shift_bits_in_my_bitfield());
+        print_int_cell(0);
+        print_int_cell(0);
+    }
+    printf("\n");
+
+    print_horizontal_line(n_headers * (3 +COLUMN_WIDTH));
 }
 
 void add_peer(int sockfd, int bitfield){

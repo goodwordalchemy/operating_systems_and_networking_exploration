@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/fcntl.h>
 #include <sys/select.h>
 #include <sys/socket.h>
 #include <sys/time.h>
@@ -196,6 +197,7 @@ int handle_connection_initiated_by_peer(int listener, fd_set *fds){
         return -1;
     }
 
+    fcntl(newfd, F_SETFL, O_NONBLOCK);  // set to non-blocking
     FD_SET(newfd, fds);
 
     return newfd;
@@ -210,6 +212,7 @@ int create_listener_socket(fd_set *fds){
 
     listen_on_socket(listener, BACKLOG);
 
+    fcntl(listener, F_SETFL, O_NONBLOCK);  // set to non-blocking
     FD_SET(listener, fds);
 
     return listener;
