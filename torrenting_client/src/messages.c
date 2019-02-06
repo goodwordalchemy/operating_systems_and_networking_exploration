@@ -15,6 +15,44 @@
 
 #define N_INTEGER_BYTES 4
 
+void print_my_status(){
+    int i, bitfield, cur, n_pieces, downloaded, left, uploaded;
+    char *headers[] = {"Bitfield", "Downloaded", "Uploaded", "Left"};
+    int n_headers = 4;
+    
+    printf("My status:\n");
+    printf("\t");
+    for (i = 0; i < n_headers; i++){
+        print_str_cell(headers[i]);
+    }
+    printf("\n");
+
+    print_horizontal_line(n_headers * (3 +COLUMN_WIDTH));
+
+    n_pieces = localstate.n_pieces;
+    bitfield = what_is_my_bitfield() >> how_many_shift_bits_in_my_bitfield();
+
+    printf("\t");
+    downloaded = 0;
+    for (i = 0; i < n_pieces; i++){
+        cur = bitfield >> (n_pieces - 1 - i) & 1;
+        printf("%d", cur);
+        if (cur)
+            downloaded++;
+    }
+    printf("%*s | ", COLUMN_WIDTH - n_pieces, "");
+
+    uploaded = 0; // Nobody has uploaded anything to anyone yet!
+    left = n_pieces - downloaded;
+
+    print_int_cell(downloaded);
+    print_int_cell(uploaded); 
+    print_int_cell(left);
+    printf("\n");
+    
+    print_horizontal_line(n_headers * (3 +COLUMN_WIDTH));
+}
+
 unsigned long get_timestamp(){
     return (unsigned long)time(NULL);
 }
@@ -47,7 +85,6 @@ int send_peer_message(int sockfd, msg_t *msg){
     buf = malloc(sizeof(char) * full_length);
 
     encode_int_as_char(msg->length, buf, N_INTEGER_BYTES);
-    printf("DEBUG: in send peer message, length converted back: %d\n", decode_int_from_char(buf, N_INTEGER_BYTES));
 
     buf[N_INTEGER_BYTES] = msg->type;
 
@@ -221,8 +258,6 @@ int send_request_message(int sockfd, int piece){
     msg_t msg;
     char data[12];
 
-    printf("DEBUG: sending request of %d\n", piece);
-    
     encode_int_as_char(piece, data, 4);
     encode_int_as_char(0, data + 4, 4);
     encode_int_as_char(localstate.piece_length, data + 8, 4);
@@ -291,15 +326,7 @@ int send_piece_message(int sockfd, int piece_idx){
 
     msg.payload = payload_buf;
 
-    printf("DEBUG: for sure, index: %d, begin %d, length: %d\n", 
-            decode_int_from_char(msg.payload, 4),
-            decode_int_from_char(msg.payload + 4, 4),
-            msg.length);
-
     nbytes = send_peer_message(sockfd, &msg);
-
-    printf("DEBUG: number of bytes sent: %d\n", nbytes);
-    printf("DEBUG: localstate.piece size: %d, my piece size: %d\n", localstate.piece_length, piece_length);
 
     free(payload_buf);
 
@@ -338,7 +365,21 @@ int handle_request_message(int sockfd, msg_t *msg){
     return 0;
 }
 void send_have_messages(int index){
-    printf("DEBUG: if I'd implemented it, I'd be sending have messages here\n");
+    msg_t msg;
+    int i;
+    char payload[4];
+
+    msg.length = 5;
+    msg.type = HAVE;
+
+    encode_int_as_char(index, payload, N_INTEGER_BYTES);
+    msg.payload = payload;
+
+    for (i = 0; i < localstate.max_sockfd; i++){
+        if (localstate.peers[i] == NULL)
+            continue;
+        send_peer_message(i, &msg);
+    }
 }
 
 int handle_piece_message(int sockfd, msg_t *msg){
@@ -405,20 +446,34 @@ int handle_piece_message(int sockfd, msg_t *msg){
     return 0;
 }
 
+int handle_have_message(int sockfd, msg_t *msg){
+    int index;
+
+    if (msg->length != 5)
+        fprintf(stderr, "Have message was not correct length.\n");
+
+    index = decode_int_from_char(msg->payload, N_INTEGER_BYTES);
+
+    localstate.peers[sockfd]->bitfield |= (int)pow((double) 2, localstate.n_pieces - 1 - index) << how_many_shift_bits_in_my_bitfield();
+
+    printf("received HAVE message on sockfd: %d\n", sockfd);
+    print_peer_bitfields();
+
+    return 0;
+}
+
 int receive_peer_message(int sockfd){
     msg_t msg;
     int nbytes, msg_type, i;
     char length_buffer[N_INTEGER_BYTES];
 
-    // longest possible length is in a piece message.  (length prefix) (msg type) (index) (begin) (piece length) + null-termination
+    // longest possible length is in a piece message.
+    // (length prefix) (msg type) (index) (begin) (piece length) + null-termination (received) + null-termination (in receive function);
     int longest_possible_length = 4 + 1 + 4 + 4 + localstate.piece_length + 2; 
     char receive_buffer[longest_possible_length];
 
     if ((nbytes = receive_on_socket(sockfd, receive_buffer, longest_possible_length)) <= 0)
         return -1;
-
-    printf("DEBUG: longest possible length: %d\n", longest_possible_length);
-    printf("DEBUG: receiving peer message.  nbytes=%d\n", nbytes);
 
     // DEBUGGING
     /* printf("These are the first 15 bytes of the message received:\n"); */
@@ -451,6 +506,8 @@ int receive_peer_message(int sockfd){
         case (NOT_INTERESTED):
             break;
         case (HAVE):
+            if (handle_have_message(sockfd, &msg) == -1)
+                return -1;
             break;
         case (BITFIELD):
             if (handle_bitfield_message(sockfd, &msg) == -1)

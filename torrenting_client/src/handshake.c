@@ -21,44 +21,6 @@
 #define HANDSHAKE_BUFLEN (49 + PSTRLEN + 1)
 #define RESERVED_SECTION "00000000"
 
-void print_my_status(){
-    int i, bitfield, cur, n_pieces, downloaded, left, uploaded;
-    char *headers[] = {"Bitfield", "Downloaded", "Uploaded", "Left"};
-    int n_headers = 4;
-    
-    printf("My status:\n");
-    printf("\t");
-    for (i = 0; i < n_headers; i++){
-        print_str_cell(headers[i]);
-    }
-    printf("\n");
-
-    print_horizontal_line(n_headers * (3 +COLUMN_WIDTH));
-
-    n_pieces = localstate.n_pieces;
-    bitfield = what_is_my_bitfield() >> how_many_shift_bits_in_my_bitfield();
-
-    printf("\t");
-    downloaded = 0;
-    for (i = 0; i < n_pieces; i++){
-        cur = bitfield >> (n_pieces - 1 - i) & 1;
-        printf("%d", cur);
-        if (cur)
-            downloaded++;
-    }
-    printf("%*s | ", COLUMN_WIDTH - n_pieces, "");
-
-    uploaded = 0; // Nobody has uploaded anything to anyone yet!
-    left = n_pieces - downloaded;
-
-    print_int_cell(downloaded);
-    print_int_cell(uploaded); 
-    print_int_cell(left);
-    printf("\n");
-    
-    print_horizontal_line(n_headers * (3 +COLUMN_WIDTH));
-}
-
 void write_handshake_str(char *buf){
     snprintf(buf, HANDSHAKE_BUFLEN, "%c%s%s%s%s",
              PSTRLEN, PROTOCOL_NAME,
