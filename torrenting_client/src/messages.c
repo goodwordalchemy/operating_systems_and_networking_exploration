@@ -388,7 +388,7 @@ void send_have_messages(int index){
 
 int handle_piece_message(int sockfd, msg_t *msg){
     FILE *f;
-    int index, begin, expected_length, piece_length;
+    int index, begin, expected_length, piece_length, next_piece;
     char *piece_contents, *cur_hash_digest;
 
     printf("DEBUG: got a piece message! ");
@@ -442,11 +442,19 @@ int handle_piece_message(int sockfd, msg_t *msg){
         return -1;
     }
 
-    // Note, bitfield is automatically updated, because piece hash file exists.
-    localstate.peers[sockfd]->requested_piece = -1;
     fclose(f);
-    send_have_messages(index);
+
+    // Note, bitfield is automatically updated, because piece hash file exists.
+    
+    next_piece = choose_a_piece_to_request();
+    if (next_piece != -1)
+        send_request_message(sockfd, next_piece);
+    else
+        localstate.peers[sockfd]->requested_piece = next_piece;
+
     print_my_status();
+
+    send_have_messages(index);
 
     return 0;
 }
