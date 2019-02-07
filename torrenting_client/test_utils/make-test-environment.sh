@@ -66,6 +66,22 @@ run_test_client(){
     popd
 }
 
+count_pieces_in_clients(){
+	for client_dir in $TESTDIR/*; do
+		local N_PIECES=$(ls -1 $client_dir/*.piece | wc -l)	
+        echo $client_dir :: $N_PIECES
+	done
+}
+
+watch_pieces(){
+    while [ 1 ]; do
+        echo "------>$(date)"
+        count_pieces_in_clients
+        sleep 3
+    done
+
+}
+
 # main section
 rm -rf $TESTDIR
 make

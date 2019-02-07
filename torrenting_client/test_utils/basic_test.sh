@@ -1,7 +1,7 @@
 #!/bin/bash
 
 export N_SEEDS=1
-export N_LEECHES=5
+export N_LEECHES=1
 
 . ./test_utils/make-test-environment.sh
 
@@ -17,4 +17,4 @@ do
     run_test_client leech $i &
 done
 
-wait
+watch_pieces
