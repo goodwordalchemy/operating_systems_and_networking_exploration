@@ -311,15 +311,12 @@ int send_piece_message(int sockfd, int piece_idx){
     char *piece_hash_digest, *payload_buf;
     char piece_filename[FILENAME_WITH_EXT_BUFLEN];
     
-    DEBUG_PRINT("sending a PIECE message: %d\n", piece_idx);
+    DEBUG_PRINT("sending a PIECE message with index %d\n", piece_idx);
 
     msg.type = PIECE;
 
     piece_hash_digest = localstate.piece_hash_digests[piece_idx];
     get_filename_with_extension(piece_hash_digest, piece_filename);
-
-    if ((f = fopen(piece_filename, "r")) == NULL)
-        return -1;
 
     if (piece_idx == localstate.n_pieces-1)
         piece_length = localstate.last_piece_size;
@@ -338,8 +335,21 @@ int send_piece_message(int sockfd, int piece_idx){
     begin = 0; // Maybe later I'll implement block sizes other than piece size...
     encode_int_as_char(begin, payload_buf + 4, N_INTEGER_BYTES);
 
+    if ((f = fopen(piece_filename, "r")) == NULL){
+        perror("fopen");
+        free(payload_buf);
+        return -1;
+    }
+
     if (fread(payload_buf+8, 1, piece_length, f) == 0){
-        perror("malloc");
+        perror("fread");
+        free(payload_buf);
+        return -1;
+    }
+
+    if (fclose(f) == EOF){
+        perror("fclose");
+        free(payload_buf);
         return -1;
     }
 
@@ -551,7 +561,7 @@ int dispatch_peer_message(int sockfd, char *receive_buffer) {
 }
 
 int receive_peer_message(int sockfd){
-    int nbytes, prev_msg_length;
+    int nbytes, bytes_read;
 
     // longest possible length is in a piece message.
     // (length prefix) (msg type) (index) (begin) (piece length) + null-termination (received) + null-termination (in receive function);
@@ -564,17 +574,15 @@ int receive_peer_message(int sockfd){
 
     DEBUG_PRINT("received nbytes=%d\n", nbytes);
 
-    prev_msg_length = 0;
+    bytes_read = 0;
     while (nbytes > 0){
         DEBUG_PRINT("nbytes: %d\n", nbytes);
-        prev_msg_length = dispatch_peer_message(sockfd, receive_buffer + prev_msg_length); 
-        if (prev_msg_length == -1)
+        bytes_read = dispatch_peer_message(sockfd, receive_buffer + bytes_read); 
+        if (bytes_read == -1)
             return -1;
 
-        break;
-
-        prev_msg_length++; // +1 for null-termination
-        nbytes -= prev_msg_length;
+        bytes_read += N_INTEGER_BYTES + 1;  // +1 for null-termination
+        nbytes -= bytes_read;
     }
 
     return 0;
