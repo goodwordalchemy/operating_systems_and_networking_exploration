@@ -13,7 +13,15 @@
 #include "socket_helpers.h"
 #include "state.h"
 
+#define DEBUG 1
 #define N_INTEGER_BYTES 4
+
+#if defined(DEBUG) && DEBUG > 0
+ #define DEBUG_PRINT(fmt, args...) fprintf(stderr, "DEBUG: %s:%d:%s(): " fmt, \
+    __FILE__, __LINE__, __func__, ##args)
+#else
+ #define DEBUG_PRINT(fmt, args...) /* Don't do anything in release builds */
+#endif
 
 void print_my_status(){
     int i, bitfield, cur, n_pieces, downloaded, left, uploaded;
@@ -91,7 +99,7 @@ int send_peer_message(int sockfd, msg_t *msg){
 
     memcpy(buf + N_INTEGER_BYTES + 1, msg->payload, msg->length - 1);
 
-    printf("DEBUG: sending message of type %d\n", msg->type);
+    DEBUG_PRINT("sending message of type %d\n", msg->type);
 
     nbytes = send_on_socket(sockfd, buf, full_length);
     
@@ -276,7 +284,7 @@ int send_request_message(int sockfd, int piece){
     localstate.peers[sockfd]->last_contact = get_timestamp();
     localstate.peers[sockfd]->requested_piece = piece;
 
-    printf("DEBUG: REQUESTing piece %d from sockfd %d\n", piece, sockfd);
+    DEBUG_PRINT("REQUESTing piece %d from sockfd %d\n", piece, sockfd);
 
     return 1;
 }
@@ -299,7 +307,7 @@ int send_piece_message(int sockfd, int piece_idx){
     char *piece_hash_digest, *payload_buf;
     char piece_filename[FILENAME_WITH_EXT_BUFLEN];
     
-    printf("\nDEBUG: sending a PIECE message: %d\n", piece_idx);
+    DEBUG_PRINT("sending a PIECE message: %d\n", piece_idx);
 
     msg.type = PIECE;
 
@@ -395,8 +403,7 @@ int handle_piece_message(int sockfd, msg_t *msg){
     char *piece_contents, *cur_hash_digest;
     char piece_filename[FILENAME_WITH_EXT_BUFLEN];
 
-    printf("DEBUG: got a PIECE message! ");
-    printf("index: %d, begin %d, length: %d\n", 
+    DEBUG_PRINT("got a PIECE message! index: %d, begin %d, length: %d\n", 
             decode_int_from_char(msg->payload, 4),
             decode_int_from_char(msg->payload + 4, 4),
             msg->length);
@@ -506,7 +513,7 @@ int receive_peer_message(int sockfd){
     msg_type = receive_buffer[N_INTEGER_BYTES];
     msg.type = msg_type;
 
-    printf("DEBUG: received msg.type: %d\n", msg.type);
+    DEBUG_PRINT("received msg.type: %d\n", msg.type);
 
     if (msg.type != BITFIELD && localstate.peers[sockfd] == NULL)
         return -1;
