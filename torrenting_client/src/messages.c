@@ -174,18 +174,18 @@ void print_peer_bitfields(){
 
     print_horizontal_line(n_headers * (3 +COLUMN_WIDTH));
 
-    printf("\t");
-    for (i = 0; i<MAX_SOCKFD; i++){
+    for (i = 0; i<localstate.max_sockfd; i++){
         if ((p = localstate.peers[i]) == NULL)
             continue;
 
+		printf("\t");
         print_int_cell(i);
         print_str_cell("0101");
         print_bitfield_cell(p->bitfield >> how_many_shift_bits_in_my_bitfield());
         print_int_cell(0);
         print_int_cell(0);
+		printf("\n");
     }
-    printf("\n");
 
     print_horizontal_line(n_headers * (3 +COLUMN_WIDTH));
 }
@@ -202,7 +202,7 @@ void add_peer(int sockfd, int bitfield){
 
     localstate.peers[sockfd] = p;
 
-    printf("Added a new peer.\n");
+    printf("Added a new peer on socket %d.\n", sockfd);
 };
 
 int handle_bitfield_message(int sockfd, msg_t *msg){
