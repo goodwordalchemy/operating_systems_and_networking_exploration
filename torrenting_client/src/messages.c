@@ -261,7 +261,7 @@ int peer_has_piece(int sockfd, int index){
 int i_have_piece(int index){
     int bitfield;
 
-    bitfield = what_is_my_bitfield() << how_many_shift_bits_in_my_bitfield();
+    bitfield = what_is_my_bitfield() >> how_many_shift_bits_in_my_bitfield();
 
     return bitfield_has_piece(bitfield, index);
 }
@@ -296,7 +296,7 @@ void send_request_messages(){
     int rpeer, mybitfield, i, j;
     peer_t *p;
 
-    mybitfield = what_is_my_bitfield() << how_many_shift_bits_in_my_bitfield();
+    mybitfield = what_is_my_bitfield() >> how_many_shift_bits_in_my_bitfield();
 
     for (i = 0; i < localstate.n_pieces; i++){
         if (i_have_piece(i))
