@@ -43,6 +43,7 @@ int validate_handshake_str(int sockfd, char *expected_peer_id){
     if ((nbytes = receive_on_socket(sockfd, peer_handshake_str, HANDSHAKE_BUFLEN)) <= 0){
         if (nbytes < 0)
             perror("recv");
+        fprintf(stderr, "Error: Received nbytes=%d\n", nbytes);	
         return 0;
     }
 
@@ -56,22 +57,27 @@ int validate_handshake_str(int sockfd, char *expected_peer_id){
 
 
     if (pstrlen != PSTRLEN){
+        fprintf(stderr, "Protocol string length should be %d, but it was %d\n", PSTRLEN, pstrlen);
         return 0;
     }
 
     if (strcmp(pstr, PROTOCOL_NAME) != 0){
+        fprintf(stderr, "Protocol name should be %s, but it was %s\n", PROTOCOL_NAME, pstr);
         return  0;
     }
 
     if (strcmp(reserved, RESERVED_SECTION) != 0){
+        fprintf(stderr, "reserved section should be all 0s, but it was %s\n", reserved);
         return 0;
     }
 
     if (strcmp(info_hash, (char*) localstate.info_hash) != 0){
+        fprintf(stderr, "info hash sent by peer is different than the one we're serving.\n");
         return 0;
     }
 
     if (expected_peer_id != NULL && strcmp(peer_id, expected_peer_id) != 0){
+        fprintf(stderr, "Peer's peer ID was not what the tracker said it was.\n");
         return 0;
     }
 
@@ -208,7 +214,9 @@ int create_listener_socket(fd_set *fds){
     int listener;
     struct addrinfo *servinfo;
     servinfo = get_address_info(localstate.ip, localstate.client_port);
+    fprintf(stderr, "creaeting listener socket...");
     listener = create_bound_socket(servinfo);
+    fprintf(stderr, "%d\n", listener);
     freeaddrinfo(servinfo);
 
     listen_on_socket(listener, BACKLOG);
@@ -223,6 +231,8 @@ int setup_peer_connections(){
     struct timeval select_timeout;
     fd_set master, read_fds;
     int listener, newfd, i;
+    
+    reap_dead_processes();
 
     FD_ZERO(&master);
     FD_ZERO(&read_fds);
