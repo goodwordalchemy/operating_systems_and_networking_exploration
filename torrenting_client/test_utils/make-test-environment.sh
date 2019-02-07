@@ -2,7 +2,7 @@
 # set -e
 
 export N_SEEDS=1
-export N_LEECHES=1
+export N_LEECHES=3
 
 export SEED_PORT=8000
 export LEECH_PORT=9000
@@ -62,10 +62,10 @@ run_test_client(){
         local PORT=$LEECH_PORT
     fi
 
-    echo leech or seed : $LEECH_OR_SEED :: port : $PORT
+    echo leech or seed : $LEECH_OR_SEED :: port : $(($PORT + $INDEX))
 
     pushd $CURDIR
-    ./urtorrent $(($PORT + $INDEX)) $FILE_TO_TORRENT.torrent > out.log 2> error.log 
+    ./urtorrent $(($PORT + $INDEX)) $FILE_TO_TORRENT.torrent > out.log 2>&1 
     popd
 }
 
