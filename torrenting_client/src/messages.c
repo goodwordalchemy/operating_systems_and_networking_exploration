@@ -174,9 +174,10 @@ void print_peer_bitfields(){
 
     print_horizontal_line(n_headers * (3 +COLUMN_WIDTH));
 
-    for (i = 0; i<localstate.max_sockfd; i++){
-        if ((p = localstate.peers[i]) == NULL)
+    for (i = 4; i<=localstate.max_sockfd; i++){
+        if ((p = localstate.peers[i]) == NULL){
             continue;
+		}
 
 		printf("\t");
         print_int_cell(i);

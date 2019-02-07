@@ -111,6 +111,7 @@ int send_handshake_str(int sockfd){
 }
 
 void remove_peer(int sockfd){
+	fprintf(stderr, "Removing peer from socket %d\n", sockfd);
     free(localstate.peers[sockfd]);
     localstate.peers[sockfd] = NULL;
     close(sockfd);
