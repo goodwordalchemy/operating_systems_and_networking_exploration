@@ -22,6 +22,18 @@
 #define HANDSHAKE_BUFLEN (49 + PSTRLEN + 1)
 #define RESERVED_SECTION "00000000"
 
+void print_timestamp(){
+	int timestamp_len = 30;
+    time_t timer;
+    char buffer[timestamp_len];
+    struct tm* tm_info;
+	time(&timer);
+	tm_info = localtime(&timer);
+
+	strftime(buffer, timestamp_len, "%[%Y-%m-%d %H:%M:%S]\n", tm_info);
+	puts(buffer);
+}
+
 void write_handshake_str(char *buf){
     snprintf(buf, HANDSHAKE_BUFLEN, "%c%s%s%s%s",
              PSTRLEN, PROTOCOL_NAME,
@@ -246,6 +258,7 @@ int setup_peer_connections(){
     select_timeout.tv_usec = 0;
 
     for (;;){
+		print_timestamp();
         print_my_status();
         print_peer_bitfields();
 
