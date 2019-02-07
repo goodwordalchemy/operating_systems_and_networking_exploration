@@ -15,6 +15,7 @@
 
 #define DEBUG 1
 #define N_INTEGER_BYTES 4
+#define REQUEST_TIMEOUT 5
 
 #if defined(DEBUG) && DEBUG > 0
  #define DEBUG_PRINT(fmt, args...) fprintf(stderr, "DEBUG: %s:%d:%s(): " fmt, \
@@ -294,6 +295,10 @@ int send_request_message(int sockfd, int piece){
     return 1;
 }
 
+int request_timed_out(peer_t *p){
+    return p->last_contact + REQUEST_TIMEOUT < get_timestamp();
+}
+
 void send_request_messages(){
     int rpeer, mybitfield, i, j;
     peer_t *p;
@@ -306,7 +311,9 @@ void send_request_messages(){
 
         for (j = 0; j <= localstate.max_sockfd; j++){
             p = localstate.peers[j];
-            if (p != NULL && p->requested_piece == -1 && peer_has_piece(j, i)){
+            if (p == NULL || !peer_has_piece(j, i))
+                continue;
+            if (p->requested_piece == -1 || request_timed_out(p)){
                 send_request_message(j, i);
                 break;
             }
@@ -419,7 +426,7 @@ void send_have_messages(int index){
     msg.type = HAVE;
     msg.payload = payload;
 
-    for (i = 0; i < localstate.max_sockfd; i++){
+    for (i = 0; i <= localstate.max_sockfd; i++){
         if (localstate.peers[i] == NULL)
             continue;
         send_peer_message(i, &msg);
