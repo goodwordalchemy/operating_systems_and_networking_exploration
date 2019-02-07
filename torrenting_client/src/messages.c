@@ -164,6 +164,7 @@ void print_peer_bitfields(){
     peer_t *p;
     char *headers[] = {"Peer Id", "Status", "Bitfield", "Down/s", "Up/s"};
     int n_headers = 5;
+    char peer_id_cell[SHA_DIGEST_LENGTH+4];
 
     printf("Peer bitfields:\n");
 
@@ -180,8 +181,12 @@ void print_peer_bitfields(){
             continue;
 		}
 
+        memset(peer_id_cell, 0, SHA_DIGEST_LENGTH + 4);
+        memcpy(peer_id_cell, p->peer_id, SHA_DIGEST_LENGTH);
+        sprintf(peer_id_cell + SHA_DIGEST_LENGTH, "-%d", i);
+
 		printf("\t");
-        print_str_cell(p->peer_id);
+        print_str_cell(peer_id_cell);
         print_str_cell("0101");
         print_bitfield_cell(p->bitfield);
         print_int_cell(0);
