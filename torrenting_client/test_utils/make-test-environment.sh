@@ -21,7 +21,7 @@ popd () {
 }
 
 _make_test_dir(){
-    CURDIR=$1
+    local CURDIR=$1
     rm -rf $CURDIR
     mkdir -p $CURDIR
     pushd $CURDIR
@@ -31,14 +31,14 @@ _make_test_dir(){
 }
 
 get_dir_name(){
-    LEECH_OR_SEED=$1
-    INDEX=$2
+    local LEECH_OR_SEED=$1
+    local INDEX=$2
     echo "$TESTDIR/$LEECH_OR_SEED-$INDEX"
 }
 
 make_seed_dir(){
-    INDEX=$1
-    CURDIR=$(get_dir_name seed $INDEX)
+    local INDEX=$1
+    local CURDIR=$(get_dir_name seed $INDEX)
     _make_test_dir $CURDIR
     pushd $CURDIR
     ln -s ../../$FILE_TO_TORRENT 
@@ -46,8 +46,8 @@ make_seed_dir(){
 }
 
 make_leech_dir(){
-    INDEX=$1
-    CURDIR=$(get_dir_name leech $INDEX)
+    local INDEX=$1
+    local CURDIR=$(get_dir_name leech $INDEX)
     _make_test_dir $CURDIR
 }
 
