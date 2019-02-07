@@ -42,7 +42,7 @@ void write_handshake_str(char *buf){
              localstate.peer_id);
 }
 
-int validate_handshake_str(int sockfd, char *expected_peer_id){
+char *validate_handshake_and_get_peer_id(int sockfd, char *expected_peer_id){
     int nbytes;
     char peer_handshake_str[HANDSHAKE_BUFLEN];
 
@@ -50,7 +50,7 @@ int validate_handshake_str(int sockfd, char *expected_peer_id){
     char pstr[PSTRLEN + 1];
     char reserved[9];
     char info_hash[SHA_DIGEST_LENGTH+1];
-    char peer_id[SHA_DIGEST_LENGTH+1];
+    char *peer_id;
     
     if ((nbytes = receive_on_socket(sockfd, peer_handshake_str, HANDSHAKE_BUFLEN)) <= 0){
         if (nbytes < 0)
@@ -59,6 +59,8 @@ int validate_handshake_str(int sockfd, char *expected_peer_id){
         return 0;
     }
 
+     
+    peer_id = malloc(SHA_DIGEST_LENGTH+1);
     sscanf(peer_handshake_str, "%c%18c%8s%20c%20c",
            &pstrlen, pstr, reserved,
            info_hash, peer_id);
@@ -70,32 +72,37 @@ int validate_handshake_str(int sockfd, char *expected_peer_id){
 
     if (pstrlen != PSTRLEN){
         fprintf(stderr, "Protocol string length should be %d, but it was %d\n", PSTRLEN, pstrlen);
-        return 0;
+        free(peer_id);
+        return NULL;
     }
 
     if (strcmp(pstr, PROTOCOL_NAME) != 0){
         fprintf(stderr, "Protocol name should be %s, but it was %s\n", PROTOCOL_NAME, pstr);
-        return  0;
+        free(peer_id);
+        return NULL;
     }
 
     if (strcmp(reserved, RESERVED_SECTION) != 0){
         fprintf(stderr, "reserved section should be all 0s, but it was %s\n", reserved);
-        return 0;
+        free(peer_id);
+        return NULL;
     }
 
     if (strcmp(info_hash, (char*) localstate.info_hash) != 0){
         fprintf(stderr, "info hash sent by peer is different than the one we're serving.\n");
-        return 0;
+        free(peer_id);
+        return NULL;
     }
 
     if (expected_peer_id != NULL && strcmp(peer_id, expected_peer_id) != 0){
         fprintf(stderr, "Peer's peer ID was not what the tracker said it was.\n");
-        return 0;
+        free(peer_id);
+        return NULL;
     }
 
     printf("Validated Peer: %s\n", peer_id);
 
-    return 1;
+    return peer_id;
 }
 
 int send_handshake_str(int sockfd){
@@ -110,8 +117,26 @@ int send_handshake_str(int sockfd){
 
 }
 
+void add_peer(int sockfd, char *peer_id){
+    peer_t *p;
+    
+    if ((p = (peer_t *)malloc(sizeof(peer_t))) == NULL)
+        perror("malloc");
+
+    p->peer_id = peer_id;
+    p->cleared_bitfield = 0;
+    p->last_contact = 0;
+    p->requested_piece = -1;
+
+    localstate.peers[sockfd] = p;
+
+    printf("Added a new peer on socket %d.\n", sockfd);
+};
+
 void remove_peer(int sockfd){
 	fprintf(stderr, "Removing peer from socket %d\n", sockfd);
+
+    free(localstate.peers[sockfd]->peer_id);
     free(localstate.peers[sockfd]);
     localstate.peers[sockfd] = NULL;
     close(sockfd);
@@ -123,7 +148,7 @@ int _initiate_connection_with_peer(be_node *peer, fd_set *fds){
     int sockfd;
     struct addrinfo *servinfo;
 
-    char *expected_peer_id;
+    char *expected_peer_id, *actual_peer_id;
     char port_str[PORT_BUFLEN];
     char *ip = get_be_node_str(peer, "ip");
     int port = get_be_node_int(peer, "port");
@@ -144,7 +169,7 @@ int _initiate_connection_with_peer(be_node *peer, fd_set *fds){
     }
 
     expected_peer_id = get_be_node_str(peer, "peer id");
-    if (!validate_handshake_str(sockfd, expected_peer_id)){
+    if ((actual_peer_id = validate_handshake_and_get_peer_id(sockfd, expected_peer_id)) == NULL){
         fprintf(stderr, "handshake did not validate.\n");
         close(sockfd);
         return -1;
@@ -152,10 +177,12 @@ int _initiate_connection_with_peer(be_node *peer, fd_set *fds){
 
     if (send_bitfield_message(sockfd) <= 0){
         fprintf(stderr, "could not send bitfield message to peer\n");
+        free(actual_peer_id);
         close(sockfd);
         return -1;
     }
 
+    add_peer(sockfd, actual_peer_id);
     FD_SET(sockfd, fds);
     fcntl(sockfd, F_SETFL, O_NONBLOCK);  // set to non-blocking
 
@@ -186,7 +213,7 @@ int handle_connection_initiated_by_peer(int listener, fd_set *fds){
     int newfd;
     struct sockaddr_storage remoteaddr; // client address
     socklen_t addrlen;
-
+    char *actual_peer_id;
     char my_handshake_str[HANDSHAKE_BUFLEN];
 
     addrlen = sizeof(remoteaddr);
@@ -199,7 +226,7 @@ int handle_connection_initiated_by_peer(int listener, fd_set *fds){
         return -1;
     }
 
-    if (!validate_handshake_str(newfd, NULL)){
+    if ((actual_peer_id = validate_handshake_and_get_peer_id(newfd, NULL)) == NULL){
         close(newfd);
         return -1;
     }
@@ -207,16 +234,19 @@ int handle_connection_initiated_by_peer(int listener, fd_set *fds){
     write_handshake_str(my_handshake_str);
     if (send_on_socket(newfd, my_handshake_str, strlen(my_handshake_str)) <= 0){
         perror("send");
+        free(actual_peer_id);
         close(newfd);
         return -1;
     }
 
     if (send_bitfield_message(newfd) <= 0){
         fprintf(stderr, "could not send bitfield message to peer\n");
+        free(actual_peer_id);
         close(newfd);
         return -1;
     }
 
+    add_peer(newfd, actual_peer_id);
     fcntl(newfd, F_SETFL, O_NONBLOCK);  // set to non-blocking
     FD_SET(newfd, fds);
 

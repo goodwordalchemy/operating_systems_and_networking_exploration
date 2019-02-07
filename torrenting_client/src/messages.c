@@ -192,23 +192,13 @@ void print_peer_bitfields(){
     print_horizontal_line(n_headers * (3 +COLUMN_WIDTH));
 }
 
-void add_peer(int sockfd, int bitfield){
-    peer_t *p;
-    
-    if ((p = (peer_t *)malloc(sizeof(peer_t))) == NULL)
-        perror("malloc");
-
-    p->bitfield = bitfield;
-    p->last_contact = 0;
-    p->requested_piece = -1;
-
-    localstate.peers[sockfd] = p;
-
-    printf("Added a new peer on socket %d.\n", sockfd);
-};
+peer_t *get_peer(int sockfd){
+    return localstate.peers[sockfd];
+}
 
 int handle_bitfield_message(int sockfd, msg_t *msg){
     // If bitfield message validates, then it will set the bitfield field on the peer struct at the sockfd.
+    peer_t *p;
     int bitfield;
 
     // For receiving messsage
@@ -238,7 +228,9 @@ int handle_bitfield_message(int sockfd, msg_t *msg){
 
     bitfield = bitfield >> how_many_shift_bits_in_my_bitfield();
 
-    add_peer(sockfd, bitfield);
+    p = get_peer(sockfd);
+    p->bitfield = bitfield;
+    p->cleared_bitfield = 1;
 
     return 0;
 }
@@ -535,7 +527,7 @@ int dispatch_peer_message(int sockfd, char *receive_buffer) {
     msg_type = receive_buffer[N_INTEGER_BYTES];
     msg.type = msg_type;
 
-    if (msg.type != BITFIELD && localstate.peers[sockfd] == NULL)
+    if (msg.type != BITFIELD && localstate.peers[sockfd]->cleared_bitfield == 0)
         return -1;
 
     msg.payload = receive_buffer + N_INTEGER_BYTES + 1;
