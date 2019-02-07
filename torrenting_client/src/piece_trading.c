@@ -15,7 +15,7 @@
 #include "socket_helpers.h"
 #include "state.h"
 
-#define SELECT_TIMEOUT 7
+#define SELECT_TIMEOUT 10
 
 #define PSTRLEN 18
 #define PROTOCOL_NAME "URTorrent protocol"
@@ -138,6 +138,7 @@ int _initiate_connection_with_peer(be_node *peer, fd_set *fds){
     }
 
     FD_SET(sockfd, fds);
+    fcntl(sockfd, F_SETFL, O_NONBLOCK);  // set to non-blocking
 
     return sockfd;
 }
@@ -265,7 +266,6 @@ int setup_peer_connections(){
         }
 
         send_request_messages();
-
     }
 
     return 0;

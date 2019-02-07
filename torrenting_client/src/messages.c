@@ -152,6 +152,8 @@ int send_bitfield_message(int sockfd){
     msg.type = BITFIELD;
     msg.payload = bf_buf;
 
+	DEBUG_PRINT("Sending BITFIELD message\n");
+
     // send message struct
     return send_peer_message(sockfd, &msg);
 }
@@ -212,6 +214,8 @@ int handle_bitfield_message(int sockfd, msg_t *msg){
 
     // for parsing message
     int n_shift_bits = 8 - (localstate.n_pieces % 8);
+	
+	DEBUG_PRINT("received BITFIELD message on sockfd %d\n", sockfd);
 
     if (msg->length != n_bitfield_bytes + 1){
         fprintf(stderr, "Expected length prefix %d.  Instead got %d\n", n_bitfield_bytes + 1, msg->length);
@@ -360,6 +364,8 @@ int handle_request_message(int sockfd, msg_t *msg){
     begin = decode_int_from_char(msg->payload + 4, 4);
     length = decode_int_from_char(msg->payload + 8, 4);
     
+    DEBUG_PRINT("Received REQUEST on sockfd %d for piece %d\n", sockfd, index);
+
     if (begin != 0){
         fprintf(stderr, "Have not implemented sending blocks that aren't the first in their piece\n");
         return -1;
@@ -376,6 +382,7 @@ int handle_request_message(int sockfd, msg_t *msg){
         fprintf(stderr, "There was an error fulfilling a piece request\n");
         return -1;
     }
+
 
     return 0;
 }
@@ -486,34 +493,22 @@ int handle_have_message(int sockfd, msg_t *msg){
     return 0;
 }
 
-int receive_peer_message(int sockfd){
+int dispatch_peer_message(int sockfd, char *receive_buffer) {
+    int msg_type, i;
     msg_t msg;
-    int nbytes, msg_type, i;
     char length_buffer[N_INTEGER_BYTES];
-
-    // longest possible length is in a piece message.
-    // (length prefix) (msg type) (index) (begin) (piece length) + null-termination (received) + null-termination (in receive function);
-    int longest_possible_length = 4 + 1 + 4 + 4 + localstate.piece_length + 2; 
-    char receive_buffer[longest_possible_length];
-
-    if ((nbytes = receive_on_socket(sockfd, receive_buffer, longest_possible_length)) <= 0)
-        return -1;
-
-    // DEBUGGING
-    /* printf("These are the first 15 bytes of the message received:\n"); */
-    /* for (i = 0; i < 15; i++) */
-    /*     printf("%02x", receive_buffer[i]); */
-    /* printf("\n"); */
-    /////////////
 
     for (i = 0; i < N_INTEGER_BYTES; i++)
         length_buffer[i] = receive_buffer[i];
-    msg.length = decode_int_from_char(length_buffer, N_INTEGER_BYTES);
 
+    msg.length = decode_int_from_char(length_buffer, N_INTEGER_BYTES);
     msg_type = receive_buffer[N_INTEGER_BYTES];
     msg.type = msg_type;
 
-    DEBUG_PRINT("received msg.type: %d\n", msg.type);
+    DEBUG_PRINT("EXPERIMENT msg_type= %d, msg length(+4): %d, next msg_type %d\n", 
+                 msg.type, 4+msg.length, receive_buffer[4+msg.length+4+1]);
+    DEBUG_PRINT("EXPERIMENT what is the null-terminator of these messages? %d\n", receive_buffer[4+msg.length+1]);
+
 
     if (msg.type != BITFIELD && localstate.peers[sockfd] == NULL)
         return -1;
@@ -552,5 +547,35 @@ int receive_peer_message(int sockfd){
             return -1;
     }
 
-    return nbytes;
+    return msg.length;
+}
+
+int receive_peer_message(int sockfd){
+    int nbytes, prev_msg_length;
+
+    // longest possible length is in a piece message.
+    // (length prefix) (msg type) (index) (begin) (piece length) + null-termination (received) + null-termination (in receive function);
+    int longest_possible_length = 4 + 1 + 4 + 4 + localstate.piece_length + 2; 
+    char receive_buffer[longest_possible_length];
+
+    memset(receive_buffer, 0, longest_possible_length);
+    if ((nbytes = receive_on_socket(sockfd, receive_buffer, longest_possible_length)) <= 0)
+        return -1;
+
+    DEBUG_PRINT("received nbytes=%d\n", nbytes);
+
+    prev_msg_length = 0;
+    while (nbytes > 0){
+        DEBUG_PRINT("nbytes: %d\n", nbytes);
+        prev_msg_length = dispatch_peer_message(sockfd, receive_buffer + prev_msg_length); 
+        if (prev_msg_length == -1)
+            return -1;
+
+        break;
+
+        prev_msg_length++; // +1 for null-termination
+        nbytes -= prev_msg_length;
+    }
+
+    return 0;
 }
