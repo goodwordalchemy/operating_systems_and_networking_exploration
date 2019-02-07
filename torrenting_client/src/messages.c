@@ -38,7 +38,7 @@ void print_my_status(){
     print_horizontal_line(n_headers * (3 +COLUMN_WIDTH));
 
     n_pieces = localstate.n_pieces;
-    bitfield = what_is_my_bitfield() >> how_many_shift_bits_in_my_bitfield();
+    bitfield = what_is_my_bitfield();
 
     printf("\t");
     downloaded = 0;
@@ -124,14 +124,12 @@ int how_many_bytes_in_my_bitfield(){
 
 int what_is_my_bitfield(){
     int i, acc;
-    int n_shift_bits = how_many_shift_bits_in_my_bitfield();
 
     acc = 0;
     for (i = 0; i < localstate.n_pieces; i++){
         if (does_piece_exist(localstate.piece_hash_digests[i]))
             acc += (1 << (localstate.n_pieces - 1 - i));
     }
-    acc = acc << n_shift_bits;
 
     return acc;
 }
@@ -145,6 +143,8 @@ int send_bitfield_message(int sockfd){
 
     // create encoded bitfield
     bitfield = what_is_my_bitfield();
+    bitfield = bitfield << how_many_shift_bits_in_my_bitfield();
+
     encode_int_as_char(bitfield, bf_buf, n_bitfield_bytes);
 
     // create message struct
@@ -182,7 +182,7 @@ void print_peer_bitfields(){
 		printf("\t");
         print_int_cell(i);
         print_str_cell("0101");
-        print_bitfield_cell(p->bitfield >> how_many_shift_bits_in_my_bitfield());
+        print_bitfield_cell(p->bitfield);
         print_int_cell(0);
         print_int_cell(0);
 		printf("\n");
@@ -214,7 +214,7 @@ int handle_bitfield_message(int sockfd, msg_t *msg){
     int n_bitfield_bytes = how_many_bytes_in_my_bitfield();;
 
     // for parsing message
-    int n_shift_bits = 8 - (localstate.n_pieces % 8);
+    int n_shift_bits = how_many_shift_bits_in_my_bitfield();
 	
 	DEBUG_PRINT("received BITFIELD message on sockfd %d\n", sockfd);
 
@@ -235,6 +235,8 @@ int handle_bitfield_message(int sockfd, msg_t *msg){
         return -1;
     }
 
+    bitfield = bitfield >> how_many_shift_bits_in_my_bitfield();
+
     add_peer(sockfd, bitfield);
 
     return 0;
@@ -253,7 +255,7 @@ int bitfield_has_piece(int bitfield, int index){
 int peer_has_piece(int sockfd, int index){
     int bitfield;
 
-    bitfield = localstate.peers[sockfd]->bitfield << how_many_shift_bits_in_my_bitfield();
+    bitfield = localstate.peers[sockfd]->bitfield;
 
     return bitfield_has_piece(bitfield, index);
 }
@@ -261,7 +263,7 @@ int peer_has_piece(int sockfd, int index){
 int i_have_piece(int index){
     int bitfield;
 
-    bitfield = what_is_my_bitfield() >> how_many_shift_bits_in_my_bitfield();
+    bitfield = what_is_my_bitfield();
 
     return bitfield_has_piece(bitfield, index);
 }
@@ -296,7 +298,7 @@ void send_request_messages(){
     int rpeer, mybitfield, i, j;
     peer_t *p;
 
-    mybitfield = what_is_my_bitfield() >> how_many_shift_bits_in_my_bitfield();
+    mybitfield = what_is_my_bitfield();
 
     for (i = 0; i < localstate.n_pieces; i++){
         if (i_have_piece(i))
@@ -498,7 +500,7 @@ int handle_piece_message(int sockfd, msg_t *msg){
 }
 
 int handle_have_message(int sockfd, msg_t *msg){
-    int index;
+    int index, idx_bitfield;
 
     if (msg->length != 5){
         fprintf(stderr, "Have message was not correct length.\n");
@@ -508,7 +510,8 @@ int handle_have_message(int sockfd, msg_t *msg){
     index = decode_int_from_char(msg->payload, N_INTEGER_BYTES);
 
     printf("received HAVE message on sockfd: %d for piece %d\n", sockfd, index);
-    localstate.peers[sockfd]->bitfield |= (int)pow((double) 2, localstate.n_pieces - 1 - index) << how_many_shift_bits_in_my_bitfield();
+    idx_bitfield = (int)pow((double) 2, localstate.n_pieces - 1 - index);
+    localstate.peers[sockfd]->bitfield |= idx_bitfield;
 
     return 0;
 }
