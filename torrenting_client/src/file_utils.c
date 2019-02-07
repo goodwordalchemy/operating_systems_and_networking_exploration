@@ -4,7 +4,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "filestring.h"
+#include "file_utils.h"
 
 int does_file_exist(char *filename){
     struct stat buf;

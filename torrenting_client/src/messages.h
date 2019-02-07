@@ -43,3 +43,4 @@ int how_many_shift_bits_in_my_bitfield();
 void send_request_messages();
 
 void print_my_status();
+void print_peer_bitfields();

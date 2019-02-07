@@ -5,18 +5,35 @@
 
 #include "file_utils.h"
 #include "hash_utils.h"
+#include "pieces.h"
 #include "state.h"
 
-#define HEX_DIGEST_BUFLEN ((SHA_DIGEST_LENGTH * 2) + 1)
+
+void get_filename_with_extension(char *piece_digest, char *buf){
+    char *extension = ".piece";
+
+    memcpy(buf, piece_digest, HEX_DIGEST_BUFLEN-1);
+    strcpy(buf + HEX_DIGEST_BUFLEN-1, extension);
+    buf[FILENAME_WITH_EXT_BUFLEN] = 0;
+}
+
+int does_piece_exist(char *piece_digest){
+    char filename_with_extension[FILENAME_WITH_EXT_BUFLEN];
+    int r;
+
+    get_filename_with_extension(piece_digest, filename_with_extension);
+
+    r = does_file_exist(filename_with_extension);
+
+    return r;
+}
 
 int validate_piece(char *piece_digest, char *data, int length){
     int i;
     unsigned char hash_buf[SHA_DIGEST_LENGTH+1];
     char digest_buf[HEX_DIGEST_BUFLEN];
 
-
     SHA1((unsigned char *)data, length, hash_buf); 
-
 
     hex_digest(hash_buf, digest_buf);
 
@@ -30,9 +47,11 @@ int validate_piece(char *piece_digest, char *data, int length){
 
 int validate_saved_piece(char *piece_digest){
     int result;
+    char filename_with_extension[FILENAME_WITH_EXT_BUFLEN];
     filestring_t *fs;
 
-    fs = read_file_to_string(piece_digest);
+    get_filename_with_extension(piece_digest, filename_with_extension);
+    fs = read_file_to_string(filename_with_extension);
 
     result = validate_piece(piece_digest, fs->data, fs->length);
 
@@ -44,6 +63,7 @@ int validate_saved_piece(char *piece_digest){
 int create_pieces(){
     int i, nbytes;
     FILE *target, *tmp;
+    char filename_with_extension[FILENAME_WITH_EXT_BUFLEN];
     int piece_size = localstate.piece_length;
     char buf[piece_size + 1];
     char *cur_piece_digest;
@@ -55,7 +75,9 @@ int create_pieces(){
         memset(buf, 0, piece_size + 1);
 
         cur_piece_digest = localstate.piece_hash_digests[i];
-        if ((tmp = fopen(cur_piece_digest, "w")) == NULL){
+        get_filename_with_extension(cur_piece_digest, filename_with_extension);
+
+        if ((tmp = fopen(filename_with_extension, "w")) == NULL){
             perror("fopen while sharding target");
             return -1;
         }
@@ -86,8 +108,6 @@ int create_pieces(){
             return -1;
         }
 
-
-
         fclose(tmp);
     }
 
@@ -98,11 +118,14 @@ int create_pieces(){
 
 void clean_pieces(){
     int i;
-    char *cur_digest; 
+    char *cur_piece_digest; 
+    char filename_with_extension[FILENAME_WITH_EXT_BUFLEN];
 
     for (i = 0; i < localstate.n_pieces; i++){
-        cur_digest = localstate.piece_hash_digests[i];
-        if (does_file_exist(cur_digest) && unlink(cur_digest) < 0)
+        cur_piece_digest = localstate.piece_hash_digests[i];
+        get_filename_with_extension(cur_piece_digest, filename_with_extension);
+
+        if (does_file_exist(filename_with_extension) && unlink(filename_with_extension) < 0)
             perror("unlink");
     }
 }

@@ -9,7 +9,7 @@
 #include <sys/stat.h>
 
 #include "be_node_utils.h"
-#include "filestring.h"
+#include "file_utils.h"
 #include "hash_utils.h"
 #include "ip_address.h"
 #include "metainfo.h"

@@ -15,7 +15,7 @@
 #include "socket_helpers.h"
 #include "state.h"
 
-#define SELECT_TIMEOUT 5
+#define SELECT_TIMEOUT 7
 
 #define PSTRLEN 18
 #define PROTOCOL_NAME "URTorrent protocol"
@@ -228,8 +228,6 @@ int setup_peer_connections(){
 
     initiate_connections_with_peers(&master);
 
-    print_my_status();
-
     listener = create_listener_socket(&master);
     localstate.max_sockfd = listener;
 
@@ -237,6 +235,9 @@ int setup_peer_connections(){
     select_timeout.tv_usec = 0;
 
     for (;;){
+        print_my_status();
+        print_peer_bitfields();
+
         // handle incoming messagesz
         read_fds = master;
 

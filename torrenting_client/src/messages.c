@@ -8,7 +8,6 @@
 #include <unistd.h>
 
 #include "logging_utils.h"
-#include "filestring.h"
 #include "messages.h"
 #include "pieces.h"
 #include "socket_helpers.h"
@@ -121,7 +120,7 @@ int what_is_my_bitfield(){
 
     acc = 0;
     for (i = 0; i < localstate.n_pieces; i++){
-        if (does_file_exist(localstate.piece_hash_digests[i]))
+        if (does_piece_exist(localstate.piece_hash_digests[i]))
             acc += (1 << (localstate.n_pieces - 1 - i));
     }
     acc = acc << n_shift_bits;
@@ -194,7 +193,6 @@ void add_peer(int sockfd, int bitfield){
     localstate.peers[sockfd] = p;
 
     printf("Added a new peer.\n");
-    print_peer_bitfields();
 };
 
 int handle_bitfield_message(int sockfd, msg_t *msg){
@@ -278,6 +276,8 @@ int send_request_message(int sockfd, int piece){
     localstate.peers[sockfd]->last_contact = get_timestamp();
     localstate.peers[sockfd]->requested_piece = piece;
 
+    printf("DEBUG: REQUESTing piece %d from sockfd %d\n", piece, sockfd);
+
     return 1;
 }
 
@@ -297,13 +297,16 @@ int send_piece_message(int sockfd, int piece_idx){
     FILE *f;
     int begin, piece_length, nbytes;
     char *piece_hash_digest, *payload_buf;
+    char piece_filename[FILENAME_WITH_EXT_BUFLEN];
     
-    printf("\nDEBUG: sending a piece message: %d\n", piece_idx);
+    printf("\nDEBUG: sending a PIECE message: %d\n", piece_idx);
 
     msg.type = PIECE;
 
     piece_hash_digest = localstate.piece_hash_digests[piece_idx];
-    if ((f = fopen(piece_hash_digest, "r")) == NULL)
+    get_filename_with_extension(piece_hash_digest, piece_filename);
+
+    if ((f = fopen(piece_filename, "r")) == NULL)
         return -1;
 
     if (piece_idx == localstate.n_pieces-1)
@@ -390,8 +393,9 @@ int handle_piece_message(int sockfd, msg_t *msg){
     FILE *f;
     int index, begin, expected_length, piece_length, next_piece;
     char *piece_contents, *cur_hash_digest;
+    char piece_filename[FILENAME_WITH_EXT_BUFLEN];
 
-    printf("DEBUG: got a piece message! ");
+    printf("DEBUG: got a PIECE message! ");
     printf("index: %d, begin %d, length: %d\n", 
             decode_int_from_char(msg->payload, 4),
             decode_int_from_char(msg->payload + 4, 4),
@@ -432,7 +436,8 @@ int handle_piece_message(int sockfd, msg_t *msg){
         return -1;
     }
 
-    if ((f = fopen(cur_hash_digest, "w")) == NULL){
+    get_filename_with_extension(cur_hash_digest, piece_filename);
+    if ((f = fopen(piece_filename, "w")) == NULL){
         perror("fopen");
         return -1;
     }
@@ -461,7 +466,6 @@ int handle_piece_message(int sockfd, msg_t *msg){
 int handle_have_message(int sockfd, msg_t *msg){
     int index;
 
-    printf("received HAVE message on sockfd: %d\n", sockfd);
     if (msg->length != 5){
         fprintf(stderr, "Have message was not correct length.\n");
         return -1;
@@ -469,6 +473,7 @@ int handle_have_message(int sockfd, msg_t *msg){
 
     index = decode_int_from_char(msg->payload, N_INTEGER_BYTES);
 
+    printf("received HAVE message on sockfd: %d for piece %d\n", sockfd, index);
     localstate.peers[sockfd]->bitfield |= (int)pow((double) 2, localstate.n_pieces - 1 - index) << how_many_shift_bits_in_my_bitfield();
 
     return 0;

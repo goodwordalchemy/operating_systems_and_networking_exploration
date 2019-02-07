@@ -7,7 +7,7 @@
 
 #include "tracker.h"
 #include "metainfo.h"
-#include "handshake.h"
+#include "piece_trading.h"
 #include "pieces.h"
 #include "state.h"
 
