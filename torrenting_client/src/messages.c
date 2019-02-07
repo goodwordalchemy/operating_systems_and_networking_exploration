@@ -162,7 +162,7 @@ int send_bitfield_message(int sockfd){
 void print_peer_bitfields(){
     int i;
     peer_t *p;
-    char *headers[] = {"Sockfd", "Status", "Bitfield", "Down/s", "Up/s"};
+    char *headers[] = {"Peer Id", "Status", "Bitfield", "Down/s", "Up/s"};
     int n_headers = 5;
 
     printf("Peer bitfields:\n");
@@ -181,7 +181,7 @@ void print_peer_bitfields(){
 		}
 
 		printf("\t");
-        print_int_cell(i);
+        print_str_cell(p->peer_id);
         print_str_cell("0101");
         print_bitfield_cell(p->bitfield);
         print_int_cell(0);
@@ -292,7 +292,7 @@ int request_timed_out(peer_t *p){
 }
 
 void send_request_messages(){
-    int rpeer, mybitfield, i, j;
+    int mybitfield, i, j;
     peer_t *p;
 
     mybitfield = what_is_my_bitfield();
@@ -427,7 +427,7 @@ void send_have_messages(int index){
 
 int handle_piece_message(int sockfd, msg_t *msg){
     FILE *f;
-    int index, begin, expected_length, piece_length, next_piece;
+    int index, begin, expected_length, piece_length;
     char *piece_contents, *cur_hash_digest;
     char piece_filename[FILENAME_WITH_EXT_BUFLEN];
 
