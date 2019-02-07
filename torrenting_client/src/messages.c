@@ -240,34 +240,32 @@ int handle_bitfield_message(int sockfd, msg_t *msg){
     return 0;
 }
 
-int choose_a_piece_to_request(){
-    int bitfield, i, power;
+int bitfield_has_piece(int bitfield, int index){
+    int power;
 
-    bitfield = what_is_my_bitfield() >> how_many_shift_bits_in_my_bitfield();
+    power = (int)pow((double)2, localstate.n_pieces - 1 - index);
 
-    for (i = 0; i < localstate.n_pieces; i++){
-        power = (int)pow((double)2, localstate.n_pieces - 1 - i);
-        if (power & bitfield)
-            continue;
-        return i;
-    }
-
-    return -1;
+    if (power & bitfield)
+        return 1;
+    return 0;
 }
 
-int choose_a_peer_to_request_from(){
-    int i;
-    peer_t *p;
-    for (i = 0; i < localstate.max_sockfd; i++){
-        if ((p = localstate.peers[i]) == NULL){
-            continue;
-        }
-        if (p->last_contact == 0 || p->requested_piece == -1){
-            return i;
-        }
-    }
-    return -1;
+int peer_has_piece(int sockfd, int index){
+    int bitfield;
+
+    bitfield = localstate.peers[sockfd]->bitfield << how_many_shift_bits_in_my_bitfield();
+
+    return bitfield_has_piece(bitfield, index);
 }
+
+int i_have_piece(int index){
+    int bitfield;
+
+    bitfield = what_is_my_bitfield() << how_many_shift_bits_in_my_bitfield();
+
+    return bitfield_has_piece(bitfield, index);
+}
+
 
 int send_request_message(int sockfd, int piece){
     msg_t msg;
@@ -294,14 +292,25 @@ int send_request_message(int sockfd, int piece){
     return 1;
 }
 
-
 void send_request_messages(){
-    int rpeer, piece;
+    int rpeer, mybitfield, i, j;
+    peer_t *p;
 
-    while ((piece = choose_a_piece_to_request()) != -1){
-        if ((rpeer = choose_a_peer_to_request_from()) == -1)
-            break;
-        send_request_message(rpeer, piece);
+    mybitfield = what_is_my_bitfield() << how_many_shift_bits_in_my_bitfield();
+
+    for (i = 0; i < localstate.n_pieces; i++){
+        if (i_have_piece(i))
+            continue;
+
+        for (j = 0; j <= localstate.max_sockfd; j++){
+            p = localstate.peers[j];
+            if (p != NULL && p->requested_piece == -1 && peer_has_piece(j, i)){
+                send_request_message(j, i);
+                break;
+            }
+        }
+        if (j == localstate.max_sockfd + 1)
+            fprintf(stderr, "Could not find a peer from which to request piece %d\n", i);
     }
 }
 
