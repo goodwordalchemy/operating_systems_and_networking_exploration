@@ -515,11 +515,6 @@ int dispatch_peer_message(int sockfd, char *receive_buffer) {
     msg_type = receive_buffer[N_INTEGER_BYTES];
     msg.type = msg_type;
 
-    DEBUG_PRINT("EXPERIMENT msg_type= %d, msg length(+4): %d, next msg_type %d\n", 
-                 msg.type, 4+msg.length, receive_buffer[4+msg.length+4+1]);
-    DEBUG_PRINT("EXPERIMENT what is the null-terminator of these messages? %d\n", receive_buffer[4+msg.length+1]);
-
-
     if (msg.type != BITFIELD && localstate.peers[sockfd] == NULL)
         return -1;
 
@@ -571,6 +566,7 @@ int receive_peer_message(int sockfd){
     memset(receive_buffer, 0, longest_possible_length);
     if ((nbytes = receive_on_socket(sockfd, receive_buffer, longest_possible_length)) <= 0)
         return -1;
+    memset(receive_buffer + nbytes, 0, longest_possible_length-nbytes);
 
     DEBUG_PRINT("received nbytes=%d\n", nbytes);
 
