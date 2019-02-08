@@ -10,6 +10,7 @@
 
 #include "tracker.h"
 #include "be_node_utils.h"
+#include "bitfield.h"
 #include "logging_utils.h"
 #include "messages.h"
 #include "socket_helpers.h"
@@ -122,7 +123,9 @@ void add_peer(int sockfd, char *peer_id){
     if ((p = (peer_t *)malloc(sizeof(peer_t))) == NULL)
         perror("malloc");
 
-    p->bitfield = NULL;
+    p->bitfield = malloc(sizeof(char) * (how_many_bytes_in_my_bitfield()));
+    memset(p->bitfield, 0, how_many_bytes_in_my_bitfield());
+
     p->peer_id = peer_id;
     p->cleared_bitfield = 0;
     p->last_contact = 0;
@@ -138,10 +141,11 @@ void free_peer(int sockfd){
 
     p = localstate.peers[sockfd];
     free(p->peer_id);
-    if (p->bitfield != NULL){
-        free(p->bitfield);
-        p->bitfield = NULL;
-    }
+    p->peer_id = NULL;
+    
+    free(p->bitfield);
+    p->bitfield = NULL;
+
     free(p);
 }
 

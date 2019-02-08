@@ -78,18 +78,14 @@ int bitfield_has_piece(char *bitfield, int index){
 void print_bitfield(char *bitfield){
     int i, n_pieces;
 
-    if (bitfield != NULL){
-        n_pieces = localstate.n_pieces;
-        for (i = 0; i < n_pieces; i++){
-            if (bitfield_has_piece(bitfield, i))
-                printf("1");
-            else
-                printf("0");
-        }
-        printf("%*s | ", COLUMN_WIDTH - n_pieces, "");
+    n_pieces = localstate.n_pieces;
+    for (i = 0; i < n_pieces; i++){
+        if (bitfield_has_piece(bitfield, i))
+            printf("1");
+        else
+            printf("0");
     }
-    else
-        print_str_cell("-");
+    printf("%*s | ", COLUMN_WIDTH - n_pieces, "");
 }
 
 void store_my_bitfield(){

@@ -136,7 +136,12 @@ void print_peer_bitfields(){
 		printf("\t");
         print_str_cell(peer_id_cell);
         print_str_cell("0101");
-        print_bitfield(p->bitfield);
+
+        if (p->cleared_bitfield)
+            print_bitfield(p->bitfield);
+        else
+            print_str_cell("-");
+
         print_int_cell(0);
         print_int_cell(0);
 		printf("\n");
@@ -172,8 +177,6 @@ int handle_bitfield_message(int sockfd, msg_t *msg){
     }
 
     p = get_peer(sockfd);
-
-    p->bitfield = malloc(sizeof(char) * (msg->length - 1));
 
     memcpy(p->bitfield, msg->payload, msg->length -1);
 
