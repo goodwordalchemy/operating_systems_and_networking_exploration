@@ -313,13 +313,11 @@ void send_request_messages(){
             p = localstate.peers[j];
             if (p == NULL || !peer_has_piece(j, i))
                 continue;
-            if (p->requested_piece == -1 || request_timed_out(p)){
+            if (request_timed_out(p) || p->requested_piece == -1){
                 send_request_message(j, i);
                 break;
             }
         }
-        if (j == localstate.max_sockfd + 1)
-            fprintf(stderr, "Could not find a peer from which to request piece %d\n", i);
     }
 }
 
@@ -580,22 +578,27 @@ int receive_peer_message(int sockfd){
 
     // longest possible length is in a piece message.
     // (length prefix) (msg type) (index) (begin) (piece length) + null-termination (received) + null-termination (in receive function);
-    int longest_possible_length = 4 + 1 + 4 + 4 + localstate.piece_length + 2; 
+    int _longest_possible_length = 4 + 1 + 4 + 4 + localstate.piece_length + 2; 
+    int longest_possible_length = 5 * _longest_possible_length;
     char receive_buffer[longest_possible_length];
 
     memset(receive_buffer, 0, longest_possible_length);
-    if ((nbytes = receive_on_socket(sockfd, receive_buffer, longest_possible_length)) <= 0)
+    if ((nbytes = receive_on_socket(sockfd, receive_buffer, longest_possible_length)) < 0){
         return -1;
+    }
     memset(receive_buffer + nbytes, 0, longest_possible_length-nbytes);
 
-    DEBUG_PRINT("received nbytes=%d\n", nbytes);
+    DEBUG_PRINT("received nbytes=%d on socket %d\n", nbytes, sockfd);
 
     bytes_read = 0;
     while (nbytes > 0){
-        DEBUG_PRINT("nbytes: %d\n", nbytes);
+        DEBUG_PRINT("nbytes left...: %d\n", nbytes);
         bytes_read = dispatch_peer_message(sockfd, receive_buffer + bytes_read); 
-        if (bytes_read == -1)
-            return -1;
+        if (bytes_read == -1){
+            fprintf(stderr, "Something strange happened while parsing messages on sockfd %d\n", sockfd);
+            /* return -1; */
+            break;
+        }
 
         bytes_read += N_INTEGER_BYTES + 1;  // +1 for null-termination
         nbytes -= bytes_read;

@@ -150,7 +150,9 @@ int receive_on_socket(int sockfd, char *buf, int buf_len)
     int numbytes;
     if ((numbytes = recv(sockfd, buf, buf_len-1, 0)) == -1) {
         perror("recv");
-        return -1;
+        if (errno != EAGAIN && errno != EWOULDBLOCK)
+            return -1;
+        return 0;
     }
 
     buf[numbytes] = '\0';
