@@ -505,6 +505,11 @@ int receive_peer_message(int sockfd){
         return -1;
     }
 
+    // Can't tell if I should have this.  If I don't then when a socket disconnects, we get a ton of 0 byte messages, but sometimes
+    // doing this results in shutting down prematurely.
+    if (nbytes == 0)
+        return -1;
+
     memset(receive_buffer + nbytes, 0, longest_possible_length-nbytes);
 
     DEBUG_PRINT("received nbytes=%d on socket %d\n", nbytes, sockfd);
