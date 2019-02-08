@@ -26,6 +26,8 @@ struct localstate_t {
     char *client_port;
     char *metainfo_filename;
 
+    char *bitfield;
+
     // metainfo state
     int piece_length;
     int file_size;

@@ -5,11 +5,12 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include "tracker.h"
+#include "bitfield.h"
 #include "metainfo.h"
 #include "piece_trading.h"
 #include "pieces.h"
 #include "state.h"
+#include "tracker.h"
 
 void free_peers(){
     int i;
@@ -23,6 +24,7 @@ void free_peers(){
 void cleanup(int trash){
     free_peers();
     free_localstate_metainfo();
+    free(localstate.bitfield);
 
     clean_pieces();
 
@@ -50,7 +52,6 @@ int main(int argc, char *argv[]) {
     printf("Parsing torrent file...\n");
     print_metainfo();
 
-
     if (localstate.is_seeder){
         printf("You are a seeder.  Creating pieces.\n");
         if (create_pieces() == -1)
@@ -59,6 +60,9 @@ int main(int argc, char *argv[]) {
 
     printf("Registering with tracker...\n");
     print_announce();
+
+    printf("Storing my bitfield...\n");
+    store_my_bitfield();
 
     printf("Downloading pieces from peers...\n");
     setup_peer_connections();
