@@ -213,32 +213,6 @@ int handle_bitfield_message(int sockfd, msg_t *msg){
     return 0;
 }
 
-int bitfield_has_piece(int bitfield, int index){
-    int power;
-
-    power = (int)pow((double)2, localstate.n_pieces - 1 - index);
-
-    if (power & bitfield)
-        return 1;
-    return 0;
-}
-
-int peer_has_piece(int sockfd, int index){
-    int bitfield;
-
-    bitfield = localstate.peers[sockfd]->bitfield;
-
-    return bitfield_has_piece(bitfield, index);
-}
-
-int i_have_piece(int index){
-    int bitfield;
-
-    bitfield = what_is_my_bitfield();
-
-    return bitfield_has_piece(bitfield, index);
-}
-
 
 int send_request_message(int sockfd, int piece){
     msg_t msg;

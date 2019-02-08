@@ -1,3 +1,5 @@
+#include <math.h>
+
 #include "pieces.h"
 #include "state.h"
 
@@ -24,5 +26,31 @@ int how_many_bytes_in_my_bitfield(){
     int n_bitfield_bytes = n_bitfield_bits / 8;
 
     return n_bitfield_bytes;
+}
+
+int bitfield_has_piece(int bitfield, int index){
+    int power;
+
+    power = (int)pow((double)2, localstate.n_pieces - 1 - index);
+
+    if (power & bitfield)
+        return 1;
+    return 0;
+}
+
+int peer_has_piece(int sockfd, int index){
+    int bitfield;
+
+    bitfield = localstate.peers[sockfd]->bitfield;
+
+    return bitfield_has_piece(bitfield, index);
+}
+
+int i_have_piece(int index){
+    int bitfield;
+
+    bitfield = what_is_my_bitfield();
+
+    return bitfield_has_piece(bitfield, index);
 }
 
