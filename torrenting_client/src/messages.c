@@ -217,24 +217,76 @@ int send_request_message(int sockfd, int piece){
     return 1;
 }
 
-void send_request_messages(){
-    int i, j;
+int get_rareness(int index){
+    int rareness, i, j;
     peer_t *p;
 
+    rareness = 0;
+    for (j = 0; j <= localstate.max_sockfd; j++){
+        p = localstate.peers[j];
+        if (p == NULL || peer_has_piece(j, i))
+            continue;
+        rareness++;
+    }
+    return rareness;
+}
+
+int compare_rareness(const void * a, const void * b){
+    int r_a, r_b, i_a, i_b;
+
+    i_a = *(int*)a;
+    i_b = *(int*)b;
+
+    r_a = get_rareness(i_a);
+    r_b = get_rareness(i_b);
+
+    return ( r_a - r_b );
+}
+
+int get_size_of_pieces_i_need(){
+    int i, n_pieces_i_need;
+
+    n_pieces_i_need = 0;
     for (i = 0; i < localstate.n_pieces; i++){
         if (i_have_piece(i))
             continue;
+        n_pieces_i_need++;
+    }
+    
+    return n_pieces_i_need;
+}
 
+void send_request_messages(){
+    int i, j, *pieces_i_need, n_pieces_i_need, index;
+    peer_t *p;
+
+    n_pieces_i_need = get_size_of_pieces_i_need();
+    pieces_i_need = (int*)malloc(sizeof(int)*n_pieces_i_need);
+
+    j = 0;
+    for (i = 0; i < localstate.n_pieces; i++){
+        if (i_have_piece(i))
+            continue;
+        pieces_i_need[j] = i;
+        j++;
+    }
+
+    qsort(pieces_i_need, n_pieces_i_need, sizeof(int), compare_rareness);
+
+    for (i = 0; i < n_pieces_i_need; i++){
+        index = pieces_i_need[i];
         for (j = 0; j <= localstate.max_sockfd; j++){
             p = localstate.peers[j];
-            if (p == NULL || !peer_has_piece(j, i))
+            if (p == NULL || !peer_has_piece(j, index))
                 continue;
             if (p->requested_piece == -1){
-                send_request_message(j, i);
+                send_request_message(j, index);
                 break;
             }
         }
     }
+
+    free(pieces_i_need);
 }
 
 int send_piece_message(int sockfd, int piece_idx){
