@@ -151,7 +151,7 @@ int send_bitfield_message(int sockfd){
     msg.type = BITFIELD;
     msg.payload = bf_buf;
 
-	DEBUG_PRINT("Sending BITFIELD message\n");
+	DEBUG_PRINT("Sending BITFIELD message to sockfd: %d\n", sockfd);
 
     // send message struct
     return send_peer_message(sockfd, &msg);
@@ -210,7 +210,7 @@ int handle_bitfield_message(int sockfd, msg_t *msg){
     // for parsing message
     int n_shift_bits = how_many_shift_bits_in_my_bitfield();
 	
-	DEBUG_PRINT("received BITFIELD message on sockfd %d\n", sockfd);
+	DEBUG_PRINT("received BITFIELD message on sockfd: %d\n", sockfd);
 
     if (msg->length != n_bitfield_bytes + 1){
         fprintf(stderr, "Expected length prefix %d.  Instead got %d\n", n_bitfield_bytes + 1, msg->length);
@@ -285,7 +285,7 @@ int send_request_message(int sockfd, int piece){
     localstate.peers[sockfd]->last_contact = get_epoch_time();
     localstate.peers[sockfd]->requested_piece = piece;
 
-    DEBUG_PRINT("REQUESTing piece %d from sockfd %d\n", piece, sockfd);
+    DEBUG_PRINT("sending REQUEST message to sockfd: %d for piece: %d\n", sockfd, piece);
 
     return 1;
 }
@@ -328,7 +328,7 @@ int send_piece_message(int sockfd, int piece_idx){
     char *piece_hash_digest, *payload_buf;
     char piece_filename[FILENAME_WITH_EXT_BUFLEN];
     
-    DEBUG_PRINT("sending a PIECE message with index %d\n", piece_idx);
+    DEBUG_PRINT("sending a PIECE message sockfd: %d with index: %d\n", sockfd, piece_idx);
 
     msg.type = PIECE;
 
@@ -437,10 +437,9 @@ int handle_piece_message(int sockfd, msg_t *msg){
     char *piece_contents, *cur_hash_digest;
     char piece_filename[FILENAME_WITH_EXT_BUFLEN];
 
-    DEBUG_PRINT("got a PIECE message! index: %d, begin %d, length: %d\n", 
-            decode_int_from_char(msg->payload, 4),
-            decode_int_from_char(msg->payload + 4, 4),
-            msg->length);
+    DEBUG_PRINT("received a PIECE message on sockfd %d for index: %d\n", 
+            sockfd,
+            decode_int_from_char(msg->payload, 4));
 
     index = decode_int_from_char(msg->payload, 4);
     begin = decode_int_from_char(msg->payload + 4, 4);
@@ -497,8 +496,6 @@ int handle_piece_message(int sockfd, msg_t *msg){
     localstate.peers[sockfd]->requested_piece = -1;
     send_request_messages();
 
-    print_my_status();
-
     send_have_messages(index);
 
     return 0;
@@ -514,7 +511,7 @@ int handle_have_message(int sockfd, msg_t *msg){
 
     index = decode_int_from_char(msg->payload, N_INTEGER_BYTES);
 
-    printf("received HAVE message on sockfd: %d for piece %d\n", sockfd, index);
+    printf("received HAVE message on sockfd: %d for piece: %d\n", sockfd, index);
     idx_bitfield = (int)pow((double) 2, localstate.n_pieces - 1 - index);
     localstate.peers[sockfd]->bitfield |= idx_bitfield;
 
@@ -540,12 +537,16 @@ int dispatch_peer_message(int sockfd, char *receive_buffer) {
 
     switch(msg.type){
         case (CHOKE):
+            fprintf(stderr, "CHOKE message, length=%d\n", msg.length);
             break;
         case (UNCHOKE):
+            fprintf(stderr, "UNCHOKE message\n");
             break;
         case (INTERESTED):
+            fprintf(stderr, "INTERESTED message\n");
             break;
         case (NOT_INTERESTED):
+            fprintf(stderr, "NOT_INTERESTED message\n");
             break;
         case (HAVE):
             if (handle_have_message(sockfd, &msg) == -1)
@@ -564,6 +565,7 @@ int dispatch_peer_message(int sockfd, char *receive_buffer) {
                 return -1;
             break;
         case (CANCEL):
+            fprintf(stderr, "CANCEL message\n");
             break;
         default:
             fprintf(stderr, "Unknown message type: %d\n", msg.type);
@@ -574,7 +576,7 @@ int dispatch_peer_message(int sockfd, char *receive_buffer) {
 }
 
 int receive_peer_message(int sockfd){
-    int nbytes, bytes_read;
+    int nbytes, bytes_read, cum_bytes_read;
 
     // longest possible length is in a piece message.
     // (length prefix) (msg type) (index) (begin) (piece length) + null-termination (received) + null-termination (in receive function);
@@ -590,17 +592,20 @@ int receive_peer_message(int sockfd){
 
     DEBUG_PRINT("received nbytes=%d on socket %d\n", nbytes, sockfd);
 
+    cum_bytes_read = 0;
     bytes_read = 0;
     while (nbytes > 0){
-        DEBUG_PRINT("nbytes left...: %d\n", nbytes);
-        bytes_read = dispatch_peer_message(sockfd, receive_buffer + bytes_read); 
+        DEBUG_PRINT("nbytes left on socket %d...: %d\n", sockfd, nbytes);
+        bytes_read = dispatch_peer_message(sockfd, receive_buffer + cum_bytes_read); 
+        fprintf(stderr, "bytes read: %d\n", bytes_read);
         if (bytes_read == -1){
             fprintf(stderr, "Something strange happened while parsing messages on sockfd %d\n", sockfd);
-            /* return -1; */
             break;
         }
 
         bytes_read += N_INTEGER_BYTES + 1;  // +1 for null-termination
+
+        cum_bytes_read += bytes_read;
         nbytes -= bytes_read;
     }
 
