@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "logging_utils.h"
 #include "encoding_utils.h"
 #include "pieces.h"
 #include "state.h"
@@ -75,14 +76,20 @@ int bitfield_has_piece(char *bitfield, int index){
 }
 
 void print_bitfield(char *bitfield){
-    int i;
-    for (i = 0; i < localstate.n_pieces; i++){
-        if (bitfield_has_piece(bitfield, i))
-            printf("1");
-        else
-            printf("0");
-    }
+    int i, n_pieces;
 
+    if (bitfield != NULL){
+        n_pieces = localstate.n_pieces;
+        for (i = 0; i < n_pieces; i++){
+            if (bitfield_has_piece(bitfield, i))
+                printf("1");
+            else
+                printf("0");
+        }
+        printf("%*s | ", COLUMN_WIDTH - n_pieces, "");
+    }
+    else
+        print_str_cell("-");
 }
 
 void store_my_bitfield(){
@@ -91,12 +98,11 @@ void store_my_bitfield(){
 
 
 int peer_has_piece(int sockfd, int index){
-    int bitfield;
+    char* bitfield;
 
     bitfield = localstate.peers[sockfd]->bitfield;
 
-    /* return bitfield_has_piece(bitfield, index); */
-    return 0;
+    return bitfield_has_piece(bitfield, index);
 }
 
 int i_have_piece(int index){
@@ -108,4 +114,14 @@ int i_have_piece(int index){
 }
 
 void add_piece_to_bitfield(char *bitfield, int index){
+    int byte_num, byte_val, bit_idx, new_val;
+
+    byte_num = index / 8;
+    bit_idx = index % 8;
+
+    byte_val = decode_int_from_char(bitfield+byte_num, 1);
+
+    new_val = byte_val | (int) pow((double) 2, 7 - bit_idx);
+    
+    encode_int_as_char(new_val, bitfield + byte_num, 1);
 }

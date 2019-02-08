@@ -11,3 +11,5 @@ int peer_has_piece(int sockfd, int index);
 int i_have_piece(int index);
 
 void print_bitfield(char *bitfield);
+
+void add_piece_to_bitfield(char *bitfield, int index);

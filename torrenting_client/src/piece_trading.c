@@ -54,9 +54,7 @@ char *validate_handshake_and_get_peer_id(int sockfd, char *expected_peer_id){
     char *peer_id;
     
     if ((nbytes = receive_on_socket(sockfd, peer_handshake_str, HANDSHAKE_BUFLEN)) <= 0){
-        if (nbytes < 0)
-            perror("recv");
-        fprintf(stderr, "Error: Received nbytes=%d\n", nbytes);	
+        fprintf(stderr, "Error receiving handshake: Received nbytes=%d\n", nbytes);	
         return 0;
     }
 
@@ -124,6 +122,7 @@ void add_peer(int sockfd, char *peer_id){
     if ((p = (peer_t *)malloc(sizeof(peer_t))) == NULL)
         perror("malloc");
 
+    p->bitfield = NULL;
     p->peer_id = peer_id;
     p->cleared_bitfield = 0;
     p->last_contact = 0;
@@ -134,11 +133,22 @@ void add_peer(int sockfd, char *peer_id){
     printf("Added a new peer on socket %d.\n", sockfd);
 };
 
+void free_peer(int sockfd){
+    peer_t *p;
+
+    p = localstate.peers[sockfd];
+    free(p->peer_id);
+    if (p->bitfield != NULL){
+        free(p->bitfield);
+        p->bitfield = NULL;
+    }
+    free(p);
+}
+
 void remove_peer(int sockfd){
 	fprintf(stderr, "Removing peer from socket %d\n", sockfd);
 
-    free(localstate.peers[sockfd]->peer_id);
-    free(localstate.peers[sockfd]);
+    free_peer(sockfd);
     localstate.peers[sockfd] = NULL;
     close(sockfd);
     if (sockfd == localstate.max_sockfd)
@@ -309,6 +319,11 @@ int setup_peer_connections(){
 
     select_timeout.tv_sec = SELECT_TIMEOUT;
     select_timeout.tv_usec = 0;
+
+    print_timestamp();
+    print_my_status();
+    print_peer_bitfields();
+    last_log_epoch = get_epoch_time();
 
     for (;;){
 

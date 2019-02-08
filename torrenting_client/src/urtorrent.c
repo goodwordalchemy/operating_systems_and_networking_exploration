@@ -16,8 +16,9 @@ void free_peers(){
     int i;
     
     for (i = 0; i < MAX_SOCKFD; i++){
-        if (localstate.peers[i] != NULL)
-            free(localstate.peers[i]);
+        if (localstate.peers[i] != NULL){
+            remove_peer(i);
+        }
     }
 }
 

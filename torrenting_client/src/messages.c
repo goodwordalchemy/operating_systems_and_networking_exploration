@@ -136,7 +136,7 @@ void print_peer_bitfields(){
 		printf("\t");
         print_str_cell(peer_id_cell);
         print_str_cell("0101");
-        print_bitfield_cell(p->bitfield);
+        print_bitfield(p->bitfield);
         print_int_cell(0);
         print_int_cell(0);
 		printf("\n");
@@ -152,7 +152,6 @@ peer_t *get_peer(int sockfd){
 int handle_bitfield_message(int sockfd, msg_t *msg){
     // If bitfield message validates, then it will set the bitfield field on the peer struct at the sockfd.
     peer_t *p;
-    int bitfield;
 
     // For receiving messsage
     int n_bitfield_bytes = how_many_bytes_in_my_bitfield();;
@@ -172,17 +171,18 @@ int handle_bitfield_message(int sockfd, msg_t *msg){
         return -1;
     }
 
-    bitfield = decode_int_from_char(msg->payload, n_bitfield_bytes);
-
-    if ((bitfield & ((int) pow((double) 2, n_shift_bits) - 1)) > 0){
-        fprintf(stderr, "trailing zeros were set in peers bitfield\n");
-        return -1;
-    }
-
-    bitfield = bitfield >> how_many_shift_bits_in_my_bitfield();
-
     p = get_peer(sockfd);
-    p->bitfield = bitfield;
+
+    p->bitfield = malloc(sizeof(char) * (msg->length - 1));
+
+    memcpy(p->bitfield, msg->payload, msg->length -1);
+
+    printf("msg bitfield...");
+    print_bitfield(msg->payload);
+    printf("peer bitfield...");
+    print_bitfield(p->bitfield);
+    printf("\n");
+
     p->cleared_bitfield = 1;
 
     return 0;
@@ -402,8 +402,8 @@ int handle_piece_message(int sockfd, msg_t *msg){
 
     fclose(f);
 
-    // Note, bitfield is automatically updated, because piece hash file exists.
-    
+    add_piece_to_bitfield(localstate.bitfield, index);
+
     // flush request messages before broadcasting have in order to prevent request message getting lost in rapid succession of
     // have / request message on same buffer.
     localstate.peers[sockfd]->requested_piece = -1;
@@ -425,8 +425,8 @@ int handle_have_message(int sockfd, msg_t *msg){
     index = decode_int_from_char(msg->payload, N_INTEGER_BYTES);
 
     printf("received HAVE message on sockfd: %d for piece: %d\n", sockfd, index);
-    idx_bitfield = (int)pow((double) 2, localstate.n_pieces - 1 - index);
-    localstate.peers[sockfd]->bitfield |= idx_bitfield;
+
+    add_piece_to_bitfield(localstate.peers[sockfd]->bitfield, index);
 
     return 0;
 }
@@ -498,12 +498,9 @@ int receive_peer_message(int sockfd){
     char receive_buffer[longest_possible_length];
 
     memset(receive_buffer, 0, longest_possible_length);
-    if ((nbytes = receive_on_socket(sockfd, receive_buffer, longest_possible_length)) <= 0){
+    if ((nbytes = receive_on_socket(sockfd, receive_buffer, longest_possible_length)) < 0){
         return -1;
     }
-
-    if (nbytes == 1)
-        return 0;
 
     memset(receive_buffer + nbytes, 0, longest_possible_length-nbytes);
 
