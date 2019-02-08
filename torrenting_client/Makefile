@@ -13,6 +13,7 @@ LDFLAGS=-L/usr/local/Cellar//openssl@1.1/1.1.0g/lib/\
 _DEPS=bencode/bencode.h\
 	  bitfield.h\
 	  be_node_utils.h\
+	  encoding_utils.h\
 	  file_utils.h\
 	  piece_trading.h\
 	  hash_utils.h\
@@ -27,8 +28,9 @@ _DEPS=bencode/bencode.h\
 DEPS=$(patsubst %, $(SRCDIR)/%, $(_DEPS))
 
 _OBJS=bencode.o\
-	  bitfield.h\
+	  bitfield.o\
 	  be_node_utils.o\
+	  encoding_utils.o\
 	  file_utils.o\
 	  piece_trading.o\
 	  hash_utils.o\
