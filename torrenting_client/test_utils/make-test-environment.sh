@@ -3,7 +3,8 @@
 export SEED_PORT=8000
 export LEECH_PORT=9000
 
-export FILE_TO_TORRENT=lovely_photo.jpg
+# export FILE_TO_TORRENT=lovely_photo.jpg
+export FILE_TO_TORRENT=moby-dick.htm
 export TRACKER_URL=http://localhost:6969/announce
 
 export TESTDIR=test_test_clients/
