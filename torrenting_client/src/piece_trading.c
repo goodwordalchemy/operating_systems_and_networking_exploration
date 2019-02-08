@@ -277,9 +277,8 @@ int create_listener_socket(fd_set *fds){
     int listener;
     struct addrinfo *servinfo;
     servinfo = get_address_info(localstate.ip, localstate.client_port);
-    fprintf(stderr, "creaeting listener socket...");
     listener = create_bound_socket(servinfo);
-    fprintf(stderr, "%d\n", listener);
+    
     freeaddrinfo(servinfo);
 
     listen_on_socket(listener, BACKLOG);
@@ -296,7 +295,7 @@ int setup_peer_connections(){
     fd_set master, read_fds;
     int listener, newfd, i;
     
-    last_log_epoch = get_epoch_time();
+    last_log_epoch = 0;
 
     reap_dead_processes();
 
