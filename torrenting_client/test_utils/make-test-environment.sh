@@ -1,5 +1,4 @@
 #!/bin/bash
-# set -e
 
 export SEED_PORT=8000
 export LEECH_PORT=9000

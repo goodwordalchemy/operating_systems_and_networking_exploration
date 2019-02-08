@@ -16,12 +16,15 @@ do
     run_test_client leech $i &
 done
 
+sleep 1
 kill $SEED_PID
+
 
 for i in $(seq 1 $N_LEECHES_AFTER);
 do
-    make_leech_dir $i
-    run_test_client leech $i &
+    my_index=$(($i + $N_LEECHES_BEFORE))
+    make_leech_dir $my_index
+    run_test_client leech $my_index &
 done
 
 watch_pieces
