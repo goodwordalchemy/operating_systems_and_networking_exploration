@@ -10,34 +10,36 @@ CFLAGS=-Wall -g
 LDFLAGS=-L/usr/local/Cellar//openssl@1.1/1.1.0g/lib/\
 		-I/usr/local/Cellar//openssl@1.1/1.1.0g/
 
-_DEPS=tracker.h\
-	 bencode/bencode.h\
-	 be_node_utils.h\
-	 file_utils.h\
-	 piece_trading.h\
-	 hash_utils.h\
-	 ip_address.h\
-	 logging_utils.h\
-	 metainfo.h\
-	 messages.h\
-	 pieces.h\
-	 socket_helpers.h\
-	 state.h
+_DEPS=bencode/bencode.h\
+	  bitfield.h\
+	  be_node_utils.h\
+	  file_utils.h\
+	  piece_trading.h\
+	  hash_utils.h\
+	  ip_address.h\
+	  logging_utils.h\
+	  metainfo.h\
+	  messages.h\
+	  pieces.h\
+	  socket_helpers.h\
+	  state.h\
+	  tracker.h
 DEPS=$(patsubst %, $(SRCDIR)/%, $(_DEPS))
 
-_OBJS=tracker.o\
-	 bencode.o\
-	 be_node_utils.o\
-	 file_utils.o\
-	 piece_trading.o\
-	 hash_utils.o\
-	 logging_utils.o\
-	 ip_address.o\
-	 metainfo.o\
-	 messages.o\
-	 pieces.o\
-	 socket_helpers.o\
-	 urtorrent.o
+_OBJS=bencode.o\
+	  bitfield.h\
+	  be_node_utils.o\
+	  file_utils.o\
+	  piece_trading.o\
+	  hash_utils.o\
+	  logging_utils.o\
+	  ip_address.o\
+	  metainfo.o\
+	  messages.o\
+	  pieces.o\
+	  socket_helpers.o\
+	  tracker.o\
+	  urtorrent.o
 OBJS=$(patsubst %, $(OBJDIR)/%, $(_OBJS))
 
 all: urtorrent
