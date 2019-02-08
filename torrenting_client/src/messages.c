@@ -49,11 +49,10 @@ void print_my_status(){
 
     printf("%*s | ", COLUMN_WIDTH - n_pieces, "");
 
-    uploaded = 0; // Nobody has uploaded anything to anyone yet!
     left = n_pieces - downloaded;
 
     print_int_cell(downloaded);
-    print_int_cell(uploaded); 
+    print_int_cell(localstate.uploaded); 
     print_int_cell(left);
     printf("\n");
     
@@ -108,6 +107,7 @@ int send_bitfield_message(int sockfd){
 }
 
 void print_peer_bitfields(){
+    float elapsed_time;
     int i;
     peer_t *p;
     char *headers[] = {"Peer Id", "Status", "Bitfield", "Down/s", "Up/s"};
@@ -142,8 +142,9 @@ void print_peer_bitfields(){
         else
             print_str_cell("-");
 
-        print_int_cell(0);
-        print_int_cell(0);
+        elapsed_time = (float)(get_epoch_time() - p->first_contact);
+        print_float_cell((float)p->downloaded / elapsed_time);
+        print_float_cell((float)p->uploaded / elapsed_time);
 		printf("\n");
     }
 
@@ -342,6 +343,9 @@ int send_piece_message(int sockfd, int piece_idx){
 
     nbytes = send_peer_message(sockfd, &msg);
 
+    localstate.uploaded++;
+    localstate.peers[sockfd]->uploaded++;
+
     free(payload_buf);
 
     return nbytes;
@@ -462,6 +466,7 @@ int handle_piece_message(int sockfd, msg_t *msg){
     // flush request messages before broadcasting have in order to prevent request message getting lost in rapid succession of
     // have / request message on same buffer.
     localstate.peers[sockfd]->requested_piece = -1;
+    localstate.peers[sockfd]->downloaded++;
     send_request_messages();
 
     send_have_messages(index);
@@ -479,7 +484,7 @@ int handle_have_message(int sockfd, msg_t *msg){
 
     index = decode_int_from_char(msg->payload, N_INTEGER_BYTES);
 
-    printf("received HAVE message on sockfd: %d for piece: %d\n", sockfd, index);
+    fprintf(stderr, "received HAVE message on sockfd: %d for piece: %d\n", sockfd, index);
 
     add_piece_to_bitfield(localstate.peers[sockfd]->bitfield, index);
 

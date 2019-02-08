@@ -75,6 +75,8 @@ int main(int argc, char *argv[]) {
     printf("Storing my bitfield...\n");
     store_my_bitfield();
 
+    localstate.uploaded = 0;
+
     printf("Downloading pieces from peers...\n");
     setup_peer_connections();
 

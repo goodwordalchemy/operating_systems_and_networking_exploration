@@ -17,6 +17,10 @@ typedef struct {
     char *bitfield;
     unsigned long last_contact;
     int requested_piece;
+    
+    unsigned long first_contact;
+    int uploaded;
+    int downloaded;
 } peer_t ;
 
 struct localstate_t {
@@ -27,6 +31,7 @@ struct localstate_t {
     char *metainfo_filename;
 
     char *bitfield;
+    int uploaded;
 
     // metainfo state
     int piece_length;

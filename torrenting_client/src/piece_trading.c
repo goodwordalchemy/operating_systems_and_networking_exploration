@@ -16,8 +16,8 @@
 #include "socket_helpers.h"
 #include "state.h"
 
-#define LOGGING_TIMEOUT 3
-#define SELECT_TIMEOUT 10
+#define LOGGING_TIMEOUT 1
+#define SELECT_TIMEOUT 3
 
 #define PSTRLEN 18
 #define PROTOCOL_NAME "URTorrent protocol"
@@ -125,6 +125,10 @@ void add_peer(int sockfd, char *peer_id){
 
     p->bitfield = malloc(sizeof(char) * (how_many_bytes_in_my_bitfield()));
     memset(p->bitfield, 0, how_many_bytes_in_my_bitfield());
+
+    p->first_contact = get_epoch_time();
+    p->uploaded = 0;
+    p->downloaded = 0;
 
     p->peer_id = peer_id;
     p->cleared_bitfield = 0;

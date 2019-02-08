@@ -16,6 +16,14 @@ void print_str_cell(char *value){
     printf("%s%*s | ", value, indent, "");
 }
 
+void print_float_cell(float value){
+    char buf[COLUMN_WIDTH];
+
+    snprintf(buf, COLUMN_WIDTH, "%.2f", value);
+
+    print_str_cell(buf);
+}
+
 void print_int_cell(int value){
     char buf[COLUMN_WIDTH];
 

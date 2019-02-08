@@ -8,6 +8,7 @@ export FILE_TO_TORRENT=moby-dick.htm
 export TRACKER_URL=http://localhost:6969/announce
 
 export TESTDIR=test_test_clients/
+export ERROR_FILE=error.log
 
 pushd () {
     command pushd "$@" > /dev/null
@@ -62,7 +63,7 @@ run_test_client(){
     echo leech or seed : $LEECH_OR_SEED :: port : $(($PORT + $INDEX))
 
     pushd $CURDIR
-    ./urtorrent $(($PORT + $INDEX)) $FILE_TO_TORRENT.torrent > out.log 2>&1 
+    ./urtorrent $(($PORT + $INDEX)) $FILE_TO_TORRENT.torrent > out.log 2> $ERROR_FILE
     popd
 }
 
