@@ -17,21 +17,31 @@ void free_peers(){
     
     for (i = 0; i < MAX_SOCKFD; i++){
         if (localstate.peers[i] != NULL){
-            remove_peer(i);
+            free_peer(i);
         }
     }
 }
 
 void cleanup(int trash){
-    free_peers();
-    free_localstate_metainfo();
-    free(localstate.bitfield);
+    fprintf(stderr, "starting to clean up...\n");
 
+    fprintf(stderr, "freeing peers...\n");
+    free_peers();
+
+    fprintf(stderr, "freeing piece names...\n");
     clean_pieces();
 
+    fprintf(stderr, "freeing localstate metainfo...\n");
+    free_localstate_metainfo();
+
+    fprintf(stderr, "freeing my bitfield...\n");
+    free(localstate.bitfield);
+
+    fprintf(stderr, "freeing metainfo be_node...\n");
     if (metainfo != NULL)
         be_free(metainfo);
 
+    fprintf(stderr, "freeing trackerinfo be_node...\n");
     if (trackerinfo != NULL)
         be_free(trackerinfo);
     exit(0);

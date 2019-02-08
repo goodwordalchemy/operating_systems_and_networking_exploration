@@ -139,6 +139,7 @@ void add_peer(int sockfd, char *peer_id){
 void free_peer(int sockfd){
     peer_t *p;
 
+    printf("starting to free peer...");
     p = localstate.peers[sockfd];
     free(p->peer_id);
     p->peer_id = NULL;
@@ -147,6 +148,7 @@ void free_peer(int sockfd){
     p->bitfield = NULL;
 
     free(p);
+    printf("done.\n");
 }
 
 void remove_peer(int sockfd){
@@ -154,6 +156,7 @@ void remove_peer(int sockfd){
 
     free_peer(sockfd);
     localstate.peers[sockfd] = NULL;
+
     close(sockfd);
     if (sockfd == localstate.max_sockfd)
         localstate.max_sockfd--;
