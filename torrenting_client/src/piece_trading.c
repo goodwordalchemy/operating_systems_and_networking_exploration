@@ -209,6 +209,18 @@ void initiate_connections_with_peers(fd_set *fds){
     }
 }
 
+int check_if_already_connected_to_peer(char *peer_id){
+    peer_t *p;
+    int i;
+    for (i = 0; i <= localstate.max_sockfd; i++){
+        if ((p = localstate.peers[i]) == NULL)
+            continue;
+        if (strcmp(p->peer_id, peer_id) == 0)
+            return 1;
+    }
+    return 0;
+}
+
 int handle_connection_initiated_by_peer(int listener, fd_set *fds){
     int newfd;
     struct sockaddr_storage remoteaddr; // client address
@@ -227,6 +239,13 @@ int handle_connection_initiated_by_peer(int listener, fd_set *fds){
     }
 
     if ((actual_peer_id = validate_handshake_and_get_peer_id(newfd, NULL)) == NULL){
+        close(newfd);
+        return -1;
+    }
+
+    if (check_if_already_connected_to_peer(actual_peer_id)){
+        fprintf(stderr, "Already connected to peer %s\n", actual_peer_id);
+        free(actual_peer_id);
         close(newfd);
         return -1;
     }
