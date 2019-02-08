@@ -217,8 +217,8 @@ int send_request_message(int sockfd, int piece){
     return 1;
 }
 
-int get_rareness(int index){
-    int rareness, i, j;
+int get_rareness(int i){
+    int rareness, j;
     peer_t *p;
 
     rareness = 0;
