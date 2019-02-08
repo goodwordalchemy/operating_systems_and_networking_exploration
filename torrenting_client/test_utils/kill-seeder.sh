@@ -16,7 +16,6 @@ do
     run_test_client leech $i &
 done
 
-
 kill $SEED_PID
 
 for i in $(seq 1 $N_LEECHES_AFTER);

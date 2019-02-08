@@ -1,6 +1,5 @@
 #include <errno.h>
 #include <math.h>
-#include <time.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -63,10 +62,6 @@ void print_my_status(){
 
 }
 
-unsigned long get_timestamp(){
-    return (unsigned long)time(NULL);
-}
-
 void encode_int_as_char(int num, char *buf, int length){
     int i;
     for (i = 0; i < length; i++){
@@ -103,6 +98,9 @@ int send_peer_message(int sockfd, msg_t *msg){
     DEBUG_PRINT("sending message of type %d\n", msg->type);
 
     nbytes = send_on_socket(sockfd, buf, full_length);
+
+    if (nbytes != full_length)
+        fprintf(stderr, "SENDING PEER MSG to socket %d.  meant to send %d, only send %d bytes\n", sockfd, full_length, nbytes);
     
     free(buf);
 
@@ -284,7 +282,7 @@ int send_request_message(int sockfd, int piece){
         return 0;
     }
 
-    localstate.peers[sockfd]->last_contact = get_timestamp();
+    localstate.peers[sockfd]->last_contact = get_epoch_time();
     localstate.peers[sockfd]->requested_piece = piece;
 
     DEBUG_PRINT("REQUESTing piece %d from sockfd %d\n", piece, sockfd);
@@ -293,7 +291,12 @@ int send_request_message(int sockfd, int piece){
 }
 
 int request_timed_out(peer_t *p){
-    return p->last_contact + REQUEST_TIMEOUT < get_timestamp();
+    int r;
+    r = p->last_contact + REQUEST_TIMEOUT < get_epoch_time();
+
+    if (r == 1)
+        fprintf(stderr, "Request from %s timed out.\n", p->peer_id);
+    return r;
 }
 
 void send_request_messages(){

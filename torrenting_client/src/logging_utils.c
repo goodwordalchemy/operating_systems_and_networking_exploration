@@ -1,8 +1,13 @@
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 
 #include "logging_utils.h"
 #include "state.h"
+
+unsigned long get_epoch_time(){
+    return (unsigned long)time(NULL);
+}
 
 void print_str_cell(char *value){
     int indent;
