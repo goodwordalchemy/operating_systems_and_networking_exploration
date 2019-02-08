@@ -25,7 +25,8 @@
 #endif
 
 void print_my_status(){
-    int i, bitfield, cur, n_pieces, downloaded, left, uploaded;
+    int i, cur, n_pieces, downloaded, left, uploaded;
+    char *bitfield;
     char *headers[] = {"Bitfield", "Downloaded", "Uploaded", "Left"};
     int n_headers = 4;
     
@@ -42,13 +43,10 @@ void print_my_status(){
     bitfield = what_is_my_bitfield();
 
     printf("\t");
+
+    print_bitfield(bitfield);
     downloaded = 0;
-    for (i = 0; i < n_pieces; i++){
-        cur = bitfield >> (n_pieces - 1 - i) & 1;
-        printf("%d", cur);
-        if (cur)
-            downloaded++;
-    }
+
     printf("%*s | ", COLUMN_WIDTH - n_pieces, "");
 
     uploaded = 0; // Nobody has uploaded anything to anyone yet!
@@ -90,22 +88,18 @@ int send_peer_message(int sockfd, msg_t *msg){
 
 
 int send_bitfield_message(int sockfd){
-    int bitfield;
+    char *bitfield;
     int n_bitfield_bytes = how_many_bytes_in_my_bitfield();
-    char bf_buf[n_bitfield_bytes];
     msg_t msg;
     
 
     // create encoded bitfield
     bitfield = what_is_my_bitfield();
-    bitfield = bitfield << how_many_shift_bits_in_my_bitfield();
-
-    encode_int_as_char(bitfield, bf_buf, n_bitfield_bytes);
 
     // create message struct
     msg.length = n_bitfield_bytes + 1;
     msg.type = BITFIELD;
-    msg.payload = bf_buf;
+    msg.payload = bitfield;
 
 	DEBUG_PRINT("Sending BITFIELD message to sockfd: %d\n", sockfd);
 
@@ -221,10 +215,8 @@ int send_request_message(int sockfd, int piece){
 }
 
 void send_request_messages(){
-    int mybitfield, i, j;
+    int i, j;
     peer_t *p;
-
-    mybitfield = what_is_my_bitfield();
 
     for (i = 0; i < localstate.n_pieces; i++){
         if (i_have_piece(i))
@@ -506,9 +498,13 @@ int receive_peer_message(int sockfd){
     char receive_buffer[longest_possible_length];
 
     memset(receive_buffer, 0, longest_possible_length);
-    if ((nbytes = receive_on_socket(sockfd, receive_buffer, longest_possible_length)) < 0){
+    if ((nbytes = receive_on_socket(sockfd, receive_buffer, longest_possible_length)) <= 0){
         return -1;
     }
+
+    if (nbytes == 1)
+        return 0;
+
     memset(receive_buffer + nbytes, 0, longest_possible_length-nbytes);
 
     DEBUG_PRINT("received nbytes=%d on socket %d\n", nbytes, sockfd);

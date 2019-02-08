@@ -19,15 +19,8 @@ int how_many_bytes_in_my_bitfield(){
     return n_bitfield_bytes;
 }
 
-int what_is_my_bitfield(){
-    int acc, i;
-    acc = 0;
-    for (i = 0; i < localstate.n_pieces; i++){
-        if (does_piece_exist(localstate.piece_hash_digests[i]))
-            acc += (1 << (localstate.n_pieces - 1 - i));
-    }
-
-    return acc;
+char *what_is_my_bitfield(){
+    return localstate.bitfield;
 }
 
 char *calculate_my_bitfield(){
@@ -107,12 +100,11 @@ int peer_has_piece(int sockfd, int index){
 }
 
 int i_have_piece(int index){
-    int bitfield;
-
+    char *bitfield;
+    
     bitfield = what_is_my_bitfield();
 
-    /* return bitfield_has_piece(bitfield, index); */
-    return 0;
+    return bitfield_has_piece(bitfield, index);
 }
 
 void add_piece_to_bitfield(char *bitfield, int index){
