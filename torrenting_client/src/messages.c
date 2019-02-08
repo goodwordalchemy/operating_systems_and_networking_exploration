@@ -14,7 +14,6 @@
 
 #define DEBUG 1
 #define N_INTEGER_BYTES 4
-#define REQUEST_TIMEOUT 5
 
 #if defined(DEBUG) && DEBUG > 0
  #define DEBUG_PRINT(fmt, args...) fprintf(stderr, "DEBUG: %s:%d:%s(): " fmt, \
@@ -290,15 +289,6 @@ int send_request_message(int sockfd, int piece){
     return 1;
 }
 
-int request_timed_out(peer_t *p){
-    int r;
-    r = p->last_contact + REQUEST_TIMEOUT < get_epoch_time();
-
-    if (r == 1)
-        fprintf(stderr, "Request from %s timed out.\n", p->peer_id);
-    return r;
-}
-
 void send_request_messages(){
     int mybitfield, i, j;
     peer_t *p;
@@ -313,7 +303,7 @@ void send_request_messages(){
             p = localstate.peers[j];
             if (p == NULL || !peer_has_piece(j, i))
                 continue;
-            if (request_timed_out(p) || p->requested_piece == -1){
+            if (p->requested_piece == -1){
                 send_request_message(j, i);
                 break;
             }
