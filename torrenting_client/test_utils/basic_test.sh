@@ -1,7 +1,7 @@
 #!/bin/bash
 
 export N_SEEDS=1
-export N_LEECHES=1
+export N_LEECHES=3
 
 . ./test_utils/make-test-environment.sh
 

@@ -15,6 +15,7 @@
 #include "socket_helpers.h"
 #include "state.h"
 
+#define LOGGING_TIMEOUT 3
 #define SELECT_TIMEOUT 10
 
 #define PSTRLEN 18
@@ -291,9 +292,12 @@ int create_listener_socket(fd_set *fds){
 
 int setup_peer_connections(){
     struct timeval select_timeout;
+    int last_log_epoch;
     fd_set master, read_fds;
     int listener, newfd, i;
     
+    last_log_epoch = get_epoch_time();
+
     reap_dead_processes();
 
     FD_ZERO(&master);
@@ -337,9 +341,12 @@ int setup_peer_connections(){
 
         send_request_messages();
 
-        print_my_status();
-		print_timestamp();
-        print_peer_bitfields();
+        if (get_epoch_time() - last_log_epoch > LOGGING_TIMEOUT){
+            print_timestamp();
+            print_my_status();
+            print_peer_bitfields();
+            last_log_epoch = get_epoch_time();
+        }
     }
 
     return 0;
