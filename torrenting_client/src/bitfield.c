@@ -41,22 +41,16 @@ char *calculate_my_bitfield(){
 
     acc = 0;
     until = localstate.n_pieces - 1 - (8 - shift_bits);
-    printf("until: %d\n", until);
-    printf("shift bits: %d\n", shift_bits);
 
     for (i=7, p = localstate.n_pieces - 1; p > until; p--, i--){
         if (does_piece_exist(localstate.piece_hash_digests[p])){
             acc += (1 << (7 - i));
-            printf("i=%d, acc=%d\n", i, acc);
         }
     }
 
     acc = acc << shift_bits;
-    printf("acc for byte %d: %d\n", nbytes - 1, acc);
         
     encode_int_as_char(acc, bitfield + nbytes - 1, 1);
-
-    printf("stored last byte: %d\n", decode_int_from_char(bitfield+nbytes - 1, 1));
 
     if (nbytes > 1){
         for (j = 0; j < nbytes - 1; j++){
@@ -64,17 +58,10 @@ char *calculate_my_bitfield(){
             for (i = 0; i < 8; i++){
                 if (does_piece_exist(localstate.piece_hash_digests[i+(j*8)]))
                     acc += (1 << (7-i));
-                else
-                    printf("piece does not exist at idx: %d\n", i+(j*8));
-                printf("i=%d, acc=%d\n", i, acc);
             }
             encode_int_as_char(acc, bitfield + j, 1);
         }
     }
-
-    for (i = 0; i < localstate.n_pieces; i++)
-        if (!does_piece_exist(localstate.piece_hash_digests[i]))
-            printf("piece idx=%d, digest=%s\n", i, localstate.piece_hash_digests[i]);
 
     return bitfield;
 }
@@ -88,8 +75,6 @@ int bitfield_has_piece(char *bitfield, int index){
     byte_val = decode_int_from_char(bitfield+byte_num, 1);
 
     ret = byte_val & (int) pow((double) 2, 7 - bit_idx);
-
-    printf("\nret for idx %d: %d, byte=%d----->", index, ret, byte_val);
 
     ret = ret >> (7 - bit_idx);
 
@@ -109,11 +94,6 @@ void print_bitfield(char *bitfield){
 
 void store_my_bitfield(){
     localstate.bitfield = calculate_my_bitfield();
-
-    //////
-    print_bitfield(localstate.bitfield);
-    exit(0);
-    //////
 }
 
 
