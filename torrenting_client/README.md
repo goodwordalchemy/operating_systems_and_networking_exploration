@@ -1,0 +1,7 @@
+## Bittorrent Client
+
+This is an implementation of the bittorrent client specification.  The main entrypoint is `src/urtorrent.c`.  The best way to test this is with a couple of seeders and a couple of leachers.  In the directory, `test_utils`, there are some scripts that can be used to run multiple clients and seeders at once pretty cleanly.  That is, you can run these scripts, watch the number of files in each clients directory, check the log files for each client, and easily clean up.  I don't want to go into how to use theses scripts, because they are pretty self-explanatory.  Happy to explain anything to anyone who contacts me with questions though.  
+
+Two other things to note when using this tool.  In order for clients to connect with eachother, you need to be running a "tracker."  [This](https://github.com/webtorrent/bittorrent-tracker) is the one I used for testing.  I cloned it to the root directory for this project, and I run it with the `run-tracker.sh` bash script.  The other thing to note is that you need a torrent file for testing.  There is a bash script in the root of this directory called `make-metainfo-file.sh`.  It assumes you have installed `MMT`.  [Here's](http://www.cs.rochester.edu/courses/257/fall2018/resources/a5_mmt.tar.gz) the tarfile I used to install MMT.  
+
+This creation was based on the [final computer networking project](http://www.cs.rochester.edu/courses/257/fall2018/projects/gp.html) at University of Rochester.
